@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>FOCUS-SUBWAY | 이동시간을 공부시간으로</title>
+    <title>포커스서브웨이 | 이동시간을 공부시간으로</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
     <style>
         :root {
@@ -1369,6 +1369,219 @@
         }
         .train-stage.is-resetting .train { transition: none; }
 
+        .ride-interior {
+            position: absolute;
+            inset: 0;
+            z-index: 40;
+            overflow: hidden;
+            visibility: hidden;
+            background: #d8d2c6;
+            opacity: 0;
+            filter: blur(8px);
+            transform: scale(1.08);
+            pointer-events: none;
+            transition:
+                opacity 2600ms cubic-bezier(.2, .72, .18, 1),
+                filter 2600ms cubic-bezier(.2, .72, .18, 1),
+                transform 3200ms cubic-bezier(.2, .72, .18, 1),
+                visibility 0s linear 3200ms;
+            will-change: opacity, filter, transform;
+        }
+
+        .app.is-riding .ride-interior {
+            visibility: visible;
+            opacity: 1;
+            filter: blur(0);
+            transform: scale(1);
+            transition-delay: 0s;
+        }
+
+        .ride-interior-visual {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: max(100vw, 177.68vh);
+            height: max(56.25vw, 100vh);
+            background: #e4dfd4 url('./assets/subway-interior-window-frame-v2.png') center / 100% 100% no-repeat;
+            transform: translate(-50%, -50%);
+        }
+
+        .ride-window-view {
+            position: absolute;
+            top: 21.45%;
+            left: 17%;
+            width: 66.2%;
+            height: 55.7%;
+            overflow: hidden;
+            border-radius: 6.5% / 13.5%;
+            background: #b8ced8;
+            box-shadow: inset 0 0 22px rgba(4, 12, 17, .38);
+        }
+
+        .ride-scene-layer {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        .ride-outdoor-layer {
+            z-index: 0;
+            transform-origin: center;
+        }
+
+        .app.is-riding .ride-outdoor-layer {
+            animation: ride-outdoor-rise 24s cubic-bezier(.4, 0, .22, 1) both;
+        }
+
+        .ride-ascent-layer {
+            z-index: 1;
+            background: #171513 url('./assets/subway-window-tunnel-ascent-v1.png') 100% center / 140% 100% no-repeat;
+            opacity: 0;
+            filter: brightness(.72);
+            transform: scale(1.08);
+            transform-origin: center;
+        }
+
+        .app.is-riding .ride-ascent-layer {
+            animation: ride-ascent-pass 24s cubic-bezier(.42, 0, .24, 1) both;
+        }
+
+        .ride-tunnel-layer {
+            z-index: 2;
+            background: #08090a;
+            opacity: 1;
+            filter: brightness(.78);
+        }
+
+        .app.is-riding .ride-tunnel-layer {
+            animation: ride-tunnel-exit 14s cubic-bezier(.45, 0, .28, 1) both;
+        }
+
+        .ride-tunnel-layer::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            background: linear-gradient(90deg, rgba(255, 238, 197, 0), rgba(255, 241, 208, .9));
+            opacity: 0;
+        }
+
+        .app.is-riding .ride-tunnel-layer::after {
+            animation: ride-exit-light 14s ease-in both;
+        }
+
+        .ride-scenery-track {
+            position: absolute;
+            inset: -2%;
+            display: flex;
+            width: 408%;
+            height: 104%;
+            animation: ride-scenery-flow 36s linear infinite;
+            animation-direction: reverse;
+            will-change: transform;
+        }
+
+        .ride-scenery-panel {
+            width: 25%;
+            height: 100%;
+            flex: 0 0 25%;
+            background: url('./assets/subway-window-scenery-korea-v2.png') center / cover no-repeat;
+        }
+
+        .ride-scenery-panel:nth-child(even) { transform: scaleX(-1); }
+
+        .ride-tunnel-layer .ride-scenery-track { animation-duration: 20s; }
+
+        .ride-tunnel-layer .ride-scenery-panel {
+            background-image: url('./assets/subway-window-tunnel-v1.png');
+        }
+
+        .ride-window-view::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            border-radius: inherit;
+            background:
+                linear-gradient(112deg, rgba(255,255,255,.22), transparent 27% 70%, rgba(255,255,255,.08)),
+                linear-gradient(180deg, rgba(224, 239, 244, .08), rgba(15, 31, 39, .08));
+            box-shadow: inset 0 0 26px rgba(8, 18, 23, .28);
+        }
+
+        @keyframes ride-scenery-flow {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
+        @keyframes ride-tunnel-exit {
+            0%, 43% { opacity: 1; filter: brightness(.78); }
+            65% { opacity: .96; filter: brightness(.98); }
+            84% { opacity: .42; filter: brightness(1.2); }
+            100% { opacity: 0; filter: brightness(1.5); visibility: hidden; }
+        }
+
+        @keyframes ride-exit-light {
+            0%, 48% { opacity: 0; transform: translateX(-38%); }
+            72% { opacity: .52; }
+            100% { opacity: .18; transform: translateX(38%); }
+        }
+
+        @keyframes ride-ascent-pass {
+            0%, 27% {
+                opacity: 0;
+                filter: brightness(.68);
+                background-position: 100% center;
+                transform: scale(1.08) translateY(0);
+            }
+            39% {
+                opacity: 1;
+                filter: brightness(.8);
+                background-position: 90% center;
+                transform: scale(1.1) translateY(1%);
+            }
+            70% {
+                opacity: 1;
+                filter: brightness(1.02);
+                background-position: 34% center;
+                transform: scale(1.13) translateY(7%);
+            }
+            100% {
+                opacity: 0;
+                filter: brightness(1.22);
+                background-position: 0 center;
+                transform: scale(1.17) translateY(14%);
+                visibility: hidden;
+            }
+        }
+
+        @keyframes ride-outdoor-rise {
+            0%, 36% {
+                filter: brightness(.65);
+                transform: scale(1.16) translateY(-6%);
+            }
+            70% {
+                filter: brightness(.9);
+                transform: scale(1.08) translateY(-2%);
+            }
+            100% {
+                filter: brightness(1);
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .app.is-session-paused .ride-scenery-track,
+        .app.is-session-paused .ride-outdoor-layer,
+        .app.is-session-paused .ride-ascent-layer,
+        .app.is-session-paused .ride-tunnel-layer,
+        .app.is-session-paused .ride-tunnel-layer::after,
+        .app.is-ride-complete .ride-scenery-track,
+        .app.is-ride-complete .ride-outdoor-layer,
+        .app.is-ride-complete .ride-ascent-layer,
+        .app.is-ride-complete .ride-tunnel-layer,
+        .app.is-ride-complete .ride-tunnel-layer::after {
+            animation-play-state: paused;
+        }
+
         .train-car {
             position: relative;
             flex: 0 0 var(--train-car-width);
@@ -1456,6 +1669,8 @@
             .platform-door-leaf,
             .train-door-leaf { transition-duration: 1ms; }
             .train { transition-duration: 1ms; }
+            .ride-interior { transition-duration: 1ms; }
+            .ride-scenery-track { animation-duration: 120s; }
         }
 
         .hidden { display: none !important; }
@@ -1498,7 +1713,7 @@
     </style>
 </head>
 <body>
-    <main class="app" aria-label="포커스서브웨이 공부시간 설정 화면">
+    <main class="app" id="app" aria-label="포커스서브웨이 공부시간 설정 화면">
         <header class="topbar">
             <div class="brand">
                 <span class="brand-mark" aria-hidden="true">🚇</span>
@@ -1576,6 +1791,30 @@
                 <span class="train-car"></span>
                 <span class="train-car"></span>
                 <span class="train-car rear-cab"></span>
+            </div>
+        </div>
+
+        <div class="ride-interior" id="ride-interior" aria-hidden="true">
+            <div class="ride-interior-visual">
+                <div class="ride-window-view">
+                    <div class="ride-scene-layer ride-outdoor-layer">
+                        <div class="ride-scenery-track">
+                            <span class="ride-scenery-panel"></span>
+                            <span class="ride-scenery-panel"></span>
+                            <span class="ride-scenery-panel"></span>
+                            <span class="ride-scenery-panel"></span>
+                        </div>
+                    </div>
+                    <div class="ride-scene-layer ride-ascent-layer"></div>
+                    <div class="ride-scene-layer ride-tunnel-layer">
+                        <div class="ride-scenery-track">
+                            <span class="ride-scenery-panel"></span>
+                            <span class="ride-scenery-panel"></span>
+                            <span class="ride-scenery-panel"></span>
+                            <span class="ride-scenery-panel"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1709,7 +1948,7 @@
             'region-menu','line-menu','top-status','status-text','origin-select','destination-select','swap-button','timetable-label','route-summary',
             'duration-value','calculation-note','start-button','setting-view','timer-view','timer-route','timer-clock','progress-bar','pause-button','end-button',
             'previous-station','current-station','next-station','station-badge','loading-message',
-            'station-board','screen-doors','train-stage','journey-map-modal','journey-map-backdrop','journey-map-close','korea-map','map-loading',
+            'app','station-board','screen-doors','train-stage','ride-interior','journey-map-modal','journey-map-backdrop','journey-map-close','korea-map','map-loading',
             'journey-region-label','journey-region-description','journey-line-list','journey-confirm-button','journey-station-picker',
             'journey-origin-select','journey-destination-select','journey-station-swap','journey-route-summary','journey-duration-summary','journey-region-back'
         ].map(id => [id.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), document.getElementById(id)]));
@@ -2626,6 +2865,7 @@
         function startSession() {
             if (!durationSeconds) return;
             clearInterval(timerHandle);
+            dom.app.classList.remove('is-riding', 'is-session-paused', 'is-ride-complete');
             session = { origin, destination, total: durationSeconds, remaining: durationSeconds, endAt: Date.now() + durationSeconds * 1000, paused: false, completed: false };
             dom.settingView.classList.add('hidden');
             dom.timerView.classList.remove('hidden');
@@ -2647,6 +2887,7 @@
                 timerHandle = 0;
                 dom.pauseButton.disabled = true;
                 dom.pauseButton.textContent = '집중 완료';
+                dom.app.classList.add('is-ride-complete');
             }
             renderTimer();
         }
@@ -2663,11 +2904,13 @@
                 session.paused = false;
                 session.endAt = Date.now() + session.remaining * 1000;
                 dom.pauseButton.textContent = '일시정지';
+                dom.app.classList.remove('is-session-paused');
                 resumeTrainSequence();
             } else {
                 session.remaining = Math.max(0, (session.endAt - Date.now()) / 1000);
                 session.paused = true;
                 dom.pauseButton.textContent = '계속하기';
+                dom.app.classList.add('is-session-paused');
                 pauseTrainSequence();
             }
             renderTimer();
@@ -2677,6 +2920,7 @@
             clearInterval(timerHandle);
             timerHandle = 0;
             resetTrainSequence();
+            dom.app.classList.remove('is-riding', 'is-session-paused', 'is-ride-complete');
             session = null;
             dom.timerView.classList.add('hidden');
             dom.settingView.classList.remove('hidden');
@@ -2693,8 +2937,14 @@
                 { at: 2700, run: () => setDoorsOpen(true) },
                 { at: 11900, run: () => setDoorsOpen(false) },
                 { at: 13000, run: () => dom.trainStage.classList.add('is-departing') },
-                { at: 23800, run: () => resetTrainSequence() }
+                { at: 23000, run: () => showRideInterior() },
+                { at: 25600, run: () => resetTrainSequence() }
             ];
+        }
+
+        function showRideInterior() {
+            if (!session || session.completed) return;
+            dom.app.classList.add('is-riding');
         }
 
         function clearTrainSequenceTimeouts() {
@@ -2727,7 +2977,7 @@
 
         function collectRunningTrainAnimations() {
             const animations = new Set();
-            [dom.trainStage, dom.screenDoors].forEach(root => {
+            [dom.trainStage, dom.screenDoors, dom.rideInterior].forEach(root => {
                 [root, ...root.querySelectorAll('*')].forEach(node => {
                     if (typeof node.getAnimations !== 'function') return;
                     node.getAnimations().forEach(animation => {
@@ -2740,7 +2990,7 @@
 
         function pauseTrainSequence() {
             if (!trainSequenceStartedAt || trainSequencePaused) return;
-            trainSequenceElapsed = Math.min(23800, Math.max(0, performance.now() - trainSequenceStartedAt));
+            trainSequenceElapsed = Math.min(25600, Math.max(0, performance.now() - trainSequenceStartedAt));
             trainSequencePaused = true;
             clearTrainSequenceTimeouts();
             pausedTrainAnimations = collectRunningTrainAnimations();
