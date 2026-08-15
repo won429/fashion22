@@ -1,0 +1,2846 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>포커스서브웨이 | 이동시간을 공부시간으로</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <style>
+        :root {
+            --line-color: #0054a6;
+            --line-color-dark: #003d7a;
+            --ink: #111827;
+            --muted: #64748b;
+            --glass: rgba(248, 250, 252, .92);
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        body {
+            min-width: 1024px;
+            background: #111719;
+            color: var(--ink);
+            font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            letter-spacing: -.02em;
+        }
+
+        button, select { font: inherit; }
+        button { border: 0; cursor: pointer; }
+
+        .app {
+            --door-height: 26.9vw;
+            --near-platform-floor: clamp(58px, 9.4vh, 88px);
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            min-height: 700px;
+            isolation: isolate;
+            overflow: hidden;
+            background: #1d2426 url('./assets/focus-subway-single-track-platform-pc-v1.png') center / cover no-repeat;
+        }
+
+        .app::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                linear-gradient(90deg, rgba(6, 12, 15, .46) 0%, rgba(6, 12, 15, .09) 39%, transparent 66%),
+                linear-gradient(180deg, rgba(5, 9, 11, .20) 0%, transparent 28%, transparent 72%, rgba(5, 9, 11, .36) 100%);
+        }
+
+        .topbar {
+            position: absolute;
+            top: 22px;
+            right: 26px;
+            left: 26px;
+            z-index: 60;
+            display: none;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 18px;
+            min-height: 70px;
+            padding: 11px 14px 11px 18px;
+            border: 1px solid rgba(255, 255, 255, .78);
+            border-radius: 22px;
+            background: rgba(249, 250, 251, .91);
+            box-shadow: 0 20px 48px -30px rgba(4, 10, 13, .68);
+            backdrop-filter: blur(24px) saturate(170%);
+            -webkit-backdrop-filter: blur(24px) saturate(170%);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: max-content;
+            padding-right: 18px;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        .brand-mark {
+            display: grid;
+            width: 42px;
+            height: 42px;
+            place-items: center;
+            border-radius: 14px;
+            background: var(--line-color);
+            color: white;
+            font-size: 20px;
+            box-shadow: 0 10px 22px -12px color-mix(in srgb, var(--line-color) 75%, transparent);
+        }
+
+        .brand strong {
+            display: block;
+            font-size: 16px;
+            font-weight: 950;
+            letter-spacing: -.055em;
+        }
+
+        .brand small {
+            display: block;
+            margin-top: 2px;
+            color: #94a3b8;
+            font-size: 9px;
+            font-weight: 750;
+        }
+
+        .menu-scroll {
+            min-width: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .menu-scroll::-webkit-scrollbar { display: none; }
+
+        .menu-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            width: max-content;
+        }
+
+        .menu-row + .menu-row { margin-top: 6px; }
+
+        .menu-label {
+            width: 28px;
+            flex: 0 0 28px;
+            color: #94a3b8;
+            font-size: 9px;
+            font-weight: 900;
+        }
+
+        .menu-button {
+            min-width: max-content;
+            padding: 6px 11px;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 850;
+            transition: transform .15s ease, color .2s ease, background .2s ease;
+        }
+
+        .menu-button:hover { transform: translateY(-1px); }
+
+        .menu-button.active {
+            border-color: var(--line-color);
+            background: var(--line-color);
+            color: white;
+            box-shadow: 0 8px 17px -10px var(--line-color);
+        }
+
+        .top-status {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: max-content;
+            padding: 9px 12px;
+            border-radius: 15px;
+            background: #f1f5f9;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #f59e0b;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, .12);
+        }
+
+        .top-status.ready .status-dot {
+            background: #22c55e;
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, .12);
+        }
+
+        .focus-card {
+            position: absolute;
+            top: 126px;
+            left: 42px;
+            z-index: 45;
+            width: 420px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, .82);
+            border-radius: 29px;
+            background: var(--glass);
+            box-shadow: 0 34px 76px -35px rgba(3, 9, 12, .82);
+            backdrop-filter: blur(26px) saturate(165%);
+            -webkit-backdrop-filter: blur(26px) saturate(165%);
+        }
+
+        .focus-card:has(#setting-view:not(.hidden)) {
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+
+        .focus-card:has(#setting-view:not(.hidden)) #setting-view > :not(.primary-button) {
+            display: none;
+        }
+
+        .card-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 9px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--line-color) 10%, white);
+            color: var(--line-color);
+            font-size: 10px;
+            font-weight: 900;
+        }
+
+        .focus-card h1,
+        .focus-card h2 {
+            margin: 13px 0 0;
+            color: #0f172a;
+            font-size: 29px;
+            font-weight: 950;
+            line-height: 1.16;
+            letter-spacing: -.06em;
+        }
+
+        .card-description {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 650;
+            line-height: 1.55;
+        }
+
+        .route-fields {
+            display: grid;
+            grid-template-columns: 1fr 42px 1fr;
+            align-items: end;
+            gap: 8px;
+            margin-top: 19px;
+        }
+
+        .field label {
+            display: block;
+            margin: 0 0 6px 3px;
+            color: #94a3b8;
+            font-size: 9px;
+            font-weight: 900;
+        }
+
+        .field select {
+            width: 100%;
+            height: 47px;
+            padding: 0 30px 0 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 15px;
+            outline: 0;
+            background: white;
+            color: #172033;
+            font-size: 13px;
+            font-weight: 850;
+            cursor: pointer;
+        }
+
+        .field select:focus {
+            border-color: var(--line-color);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--line-color) 12%, transparent);
+        }
+
+        .swap-button {
+            display: grid;
+            width: 42px;
+            height: 42px;
+            margin-bottom: 2px;
+            place-items: center;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: white;
+            color: #64748b;
+            font-size: 17px;
+            transition: transform .2s ease, color .2s ease;
+        }
+
+        .swap-button:hover { color: var(--line-color); }
+        .swap-button:active { transform: rotate(180deg); }
+
+        .duration-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 14px;
+            padding: 15px 17px;
+            border: 1px solid color-mix(in srgb, var(--line-color) 12%, white);
+            border-radius: 18px;
+            background: rgba(241, 245, 249, .88);
+        }
+
+        .duration-copy span,
+        .duration-copy strong { display: block; }
+
+        .duration-copy span {
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 750;
+        }
+
+        .duration-copy strong {
+            max-width: 230px;
+            margin-top: 4px;
+            overflow: hidden;
+            color: #172033;
+            font-size: 12px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .duration-value {
+            min-width: max-content;
+            color: var(--line-color);
+            font-size: 36px;
+            font-weight: 950;
+            letter-spacing: -.07em;
+        }
+
+        .duration-value small {
+            margin-left: 3px;
+            font-size: 12px;
+            font-weight: 850;
+            letter-spacing: -.02em;
+        }
+
+        .calculation-note {
+            min-height: 27px;
+            margin: 9px 2px 0;
+            color: #94a3b8;
+            font-size: 9px;
+            font-weight: 700;
+            line-height: 1.45;
+        }
+
+        .primary-button {
+            position: fixed;
+            bottom: 28px;
+            left: 28px;
+            z-index: 58;
+            width: 210px;
+            height: 54px;
+            margin: 0;
+            border: 1px solid rgba(255, 255, 255, .9);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .96);
+            color: #111827;
+            font-size: 15px;
+            font-weight: 900;
+            box-shadow: 0 20px 44px -18px rgba(3, 9, 12, .72), inset 0 1px white;
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            transition: transform .15s ease, opacity .2s ease;
+        }
+
+        .primary-button:hover:not(:disabled) { transform: translateY(-1px); }
+        .primary-button:active:not(:disabled) { transform: scale(.985); }
+        .primary-button:disabled { cursor: not-allowed; opacity: .72; }
+
+        .journey-map-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: grid;
+            place-items: center;
+            padding: 22px 44px;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            isolation: isolate;
+            background: rgba(4, 10, 14, .5);
+            transition: opacity .34s ease, visibility .34s ease;
+        }
+
+        .journey-map-modal::before {
+            content: "";
+            position: absolute;
+            inset: -18px;
+            z-index: -1;
+            background: rgba(10, 15, 19, .12);
+            opacity: 0;
+            backdrop-filter: blur(8px) saturate(82%);
+            -webkit-backdrop-filter: blur(8px) saturate(82%);
+            transition: opacity .34s ease;
+        }
+
+        .journey-map-modal.is-open {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .journey-map-modal.is-open::before { opacity: 1; }
+
+        .journey-map-backdrop {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            cursor: default;
+        }
+
+        .journey-map-panel {
+            position: relative;
+            width: calc(100vw - 88px);
+            max-height: calc(100vh - 44px);
+            overflow: visible;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+            transform: translateY(48px) scale(.975);
+            transition: transform .46s cubic-bezier(.2, .78, .2, 1);
+        }
+
+        .journey-map-modal.is-open .journey-map-panel { transform: translateY(0) scale(1); }
+
+        .journey-map-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            padding: 0 4px 14px;
+            border: 0;
+        }
+
+        .journey-map-heading {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .journey-region-back {
+            display: inline-flex;
+            height: 38px;
+            align-items: center;
+            gap: 7px;
+            padding: 0 14px;
+            border: 1px solid rgba(255, 255, 255, .3);
+            border-radius: 999px;
+            background: rgba(10, 18, 25, .42);
+            color: white;
+            font-size: 11px;
+            font-weight: 900;
+            box-shadow: 0 12px 30px -16px rgba(0, 0, 0, .72);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .journey-region-back:hover { background: rgba(255, 255, 255, .16); }
+
+        .journey-map-title span {
+            display: block;
+            margin-bottom: 5px;
+            color: #8fc8ff;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .journey-map-title h2 {
+            margin: 0;
+            color: white;
+            font-size: 30px;
+            font-weight: 950;
+            letter-spacing: -.055em;
+            text-shadow: 0 8px 24px rgba(0, 0, 0, .38);
+        }
+
+        .journey-map-close {
+            display: grid;
+            width: 40px;
+            height: 40px;
+            flex: 0 0 40px;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            background: rgba(10, 18, 25, .42);
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            box-shadow: 0 12px 30px -16px rgba(0, 0, 0, .72);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .journey-map-layout {
+            display: grid;
+            grid-template-columns: minmax(680px, 1fr) minmax(420px, 500px);
+            gap: clamp(64px, 7vw, 132px);
+            min-height: min(720px, calc(100vh - 130px));
+        }
+
+        .korea-map-shell {
+            position: relative;
+            display: grid;
+            min-height: min(720px, calc(100vh - 130px));
+            place-items: center;
+            overflow: visible;
+            background: transparent;
+        }
+
+        .korea-map-shell::before {
+            display: none;
+        }
+
+        #korea-map {
+            position: relative;
+            z-index: 1;
+            width: min(620px, 96%);
+            height: min(720px, calc(100vh - 130px));
+            overflow: visible;
+            filter: drop-shadow(0 20px 32px rgba(0, 0, 0, .34));
+            transform: scale(1.5);
+            transform-origin: center;
+            transition: transform .68s cubic-bezier(.2, .78, .2, 1);
+        }
+
+        #korea-map.is-region-view { overflow: visible; transform: scale(1.08); }
+        #korea-map.is-region-view.is-seoul-view { transform: scale(1.3); }
+
+        .map-province {
+            fill: rgba(210, 222, 232, .38);
+            stroke: rgba(255, 255, 255, .78);
+            stroke-width: .68;
+            vector-effect: non-scaling-stroke;
+            transition: fill .55s ease, opacity .55s ease, filter .4s ease, transform .4s ease;
+            transform-box: fill-box;
+            transform-origin: center;
+        }
+
+        #korea-map.is-region-view .map-province {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #korea-map.is-region-view .map-province.map-region-focus {
+            fill: rgba(216, 228, 238, .26);
+            stroke: rgba(255, 255, 255, .82);
+            opacity: 1;
+            pointer-events: auto;
+            filter: none;
+        }
+
+        .map-province.metro-region {
+            fill: color-mix(in srgb, var(--region-color, #0054a6) 72%, #cbd5e1);
+            stroke-width: .9;
+            cursor: pointer;
+        }
+
+        .map-province.metro-region:hover,
+        .map-province.metro-region:focus-visible {
+            fill: var(--region-color, #0054a6);
+            filter: brightness(1.08) drop-shadow(0 6px 6px rgba(15, 23, 42, .24));
+            outline: none;
+            transform: scale(1.018);
+        }
+
+        .map-province.metro-region.selected {
+            fill: var(--region-color, #0054a6);
+            filter: brightness(1.12) drop-shadow(0 7px 7px rgba(15, 23, 42, .3));
+        }
+
+        .map-region-label {
+            fill: white;
+            paint-order: stroke;
+            stroke: rgba(15, 23, 42, .42);
+            stroke-width: 3px;
+            stroke-linejoin: round;
+            font-size: 11px;
+            font-weight: 950;
+            letter-spacing: -.03em;
+            text-anchor: middle;
+            pointer-events: none;
+            transition: opacity .4s ease;
+        }
+
+        #korea-map.is-region-view .map-region-label { opacity: 0; }
+
+        .map-area-label {
+            fill: white;
+            stroke: none;
+            font-size: 2.35px;
+            font-weight: 900;
+            letter-spacing: -.035em;
+            text-anchor: middle;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .44s ease .26s;
+        }
+
+        #korea-map.is-region-view .map-area-label.active { opacity: 1; }
+
+        .map-route-line {
+            fill: none;
+            stroke: var(--route-color, #fff);
+            stroke-width: 3.2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            vector-effect: non-scaling-stroke;
+            opacity: .64;
+            pointer-events: none;
+            transition: opacity .24s ease, stroke-width .24s ease, filter .24s ease;
+        }
+
+        .map-route-line.is-dimmed { opacity: .12; }
+
+        .map-route-line.is-selected {
+            z-index: 2;
+            stroke-width: 5.4;
+            opacity: 1;
+            animation: selected-route-pulse 1.05s ease-in-out infinite;
+        }
+
+        @keyframes selected-route-pulse {
+            0%, 100% { filter: brightness(1) drop-shadow(0 0 2px var(--route-color)); }
+            50% { filter: brightness(1.65) drop-shadow(0 0 8px var(--route-color)); }
+        }
+
+        .map-loading {
+            position: absolute;
+            z-index: 2;
+            padding: 10px 14px;
+            border: 1px solid rgba(255, 255, 255, .82);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .9);
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 850;
+            box-shadow: 0 12px 30px -20px rgba(15, 23, 42, .6);
+        }
+
+        .map-loading.error { color: #b91c1c; }
+
+        .map-attribution {
+            position: absolute;
+            right: 18px;
+            bottom: 8px;
+            z-index: 3;
+            color: rgba(255, 255, 255, .52);
+            font-size: 9px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .map-attribution:hover { color: white; }
+
+        .journey-region-panel {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            padding: 24px 0 10px;
+            background: transparent;
+        }
+
+        .journey-region-kicker {
+            color: #b8d8f5;
+            font-size: 10px;
+            font-weight: 900;
+        }
+
+        .journey-region-panel h3 {
+            margin: 7px 0 5px;
+            color: white;
+            font-size: 28px;
+            font-weight: 950;
+            letter-spacing: -.055em;
+            text-shadow: 0 8px 22px rgba(0, 0, 0, .34);
+        }
+
+        .journey-region-description {
+            margin: 0;
+            color: rgba(255, 255, 255, .74);
+            font-size: 12px;
+            font-weight: 650;
+            line-height: 1.55;
+        }
+
+        .journey-line-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: 45px;
+            min-height: 0;
+            max-height: 204px;
+            flex: 0 1 auto;
+            align-content: start;
+            gap: 8px;
+            margin-top: 22px;
+            overflow-y: auto;
+            padding-right: 4px;
+            scrollbar-width: thin;
+        }
+
+        .journey-line-button {
+            display: flex;
+            min-width: 0;
+            height: 45px;
+            align-items: center;
+            gap: 8px;
+            padding: 0 10px;
+            border: 1px solid rgba(255, 255, 255, .22);
+            border-radius: 13px;
+            background: rgba(255, 255, 255, .10);
+            color: rgba(255, 255, 255, .9);
+            font-size: 11px;
+            font-weight: 850;
+            text-align: left;
+            box-shadow: 0 12px 28px -24px rgba(0, 0, 0, .8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .journey-line-button:hover { border-color: var(--button-color); }
+
+        .journey-line-button.active {
+            border-color: var(--button-color);
+            background: color-mix(in srgb, var(--button-color) 28%, rgba(255, 255, 255, .14));
+            color: white;
+            box-shadow: 0 10px 24px -17px var(--button-color);
+            animation: selected-line-button-pulse 1.05s ease-in-out infinite;
+        }
+
+        @keyframes selected-line-button-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--button-color) 24%, transparent), 0 10px 24px -17px var(--button-color); }
+            50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--button-color) 20%, transparent), 0 0 22px -5px var(--button-color); }
+        }
+
+        .journey-line-dot {
+            display: grid;
+            width: 24px;
+            height: 24px;
+            flex: 0 0 24px;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--button-color);
+            color: white;
+            font-size: 8px;
+            font-weight: 950;
+        }
+
+        .journey-line-dot.is-number {
+            font-size: 12px;
+            letter-spacing: 0;
+        }
+
+        .journey-line-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .journey-station-picker {
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, .18);
+        }
+
+        .journey-station-heading {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .journey-station-heading strong {
+            color: white;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .journey-station-heading span {
+            color: rgba(255, 255, 255, .58);
+            font-size: 9px;
+            font-weight: 750;
+        }
+
+        .journey-station-fields {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 38px minmax(0, 1fr);
+            align-items: end;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .journey-station-field label {
+            display: block;
+            margin: 0 0 6px 2px;
+            color: rgba(255, 255, 255, .66);
+            font-size: 9px;
+            font-weight: 850;
+        }
+
+        .journey-station-field select {
+            width: 100%;
+            height: 44px;
+            padding: 0 28px 0 11px;
+            border: 1px solid rgba(255, 255, 255, .24);
+            border-radius: 12px;
+            outline: 0;
+            background: rgba(255, 255, 255, .12);
+            color: white;
+            font-size: 11px;
+            font-weight: 850;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .journey-station-field select:focus {
+            border-color: var(--line-color);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--line-color) 26%, transparent);
+        }
+
+        .journey-station-field option { color: #111827; }
+
+        .journey-station-swap {
+            display: grid;
+            width: 38px;
+            height: 38px;
+            margin-bottom: 3px;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, .24);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, .12);
+            color: white;
+            font-size: 15px;
+        }
+
+        .journey-time-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            min-height: 38px;
+            margin-top: 10px;
+            color: rgba(255, 255, 255, .68);
+            font-size: 10px;
+            font-weight: 750;
+        }
+
+        .journey-time-summary strong {
+            flex: 0 0 auto;
+            color: white;
+            font-size: 21px;
+            font-weight: 950;
+            letter-spacing: -.05em;
+        }
+
+        .journey-confirm-button {
+            width: 100%;
+            height: 50px;
+            margin-top: auto;
+            border-radius: 15px;
+            background: var(--line-color);
+            color: white;
+            font-size: 13px;
+            font-weight: 900;
+            box-shadow: 0 13px 25px -18px var(--line-color);
+        }
+
+        .journey-confirm-button:disabled {
+            background: #cbd5e1;
+            color: #64748b;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .timer-route {
+            margin: 12px 0 0;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .timer-clock {
+            margin-top: 15px;
+            color: #0f172a;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 58px;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -.08em;
+        }
+
+        .progress {
+            height: 7px;
+            margin-top: 20px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #dfe6ee;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: var(--line-color);
+            transition: width 1s linear;
+        }
+
+        .timer-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+            margin-top: 18px;
+        }
+
+        .timer-actions button {
+            height: 45px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .pause-button { background: var(--line-color); color: white; }
+        .end-button { border: 1px solid #e2e8f0; background: white; color: #64748b; }
+
+        .station-board {
+            position: absolute;
+            top: 154px;
+            bottom: auto;
+            left: 50%;
+            z-index: 35;
+            width: min(43vw, 650px);
+            transform: translateX(-50%);
+        }
+
+        .station-sign {
+            position: relative;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 18px;
+            height: 78px;
+            padding: 0 28px 8px;
+            overflow: hidden;
+            border: 1px solid rgba(86, 95, 100, .88);
+            border-radius: 10px;
+            background: linear-gradient(180deg, rgba(254, 254, 253, .99), rgba(239, 242, 243, .99));
+            box-shadow: 0 16px 28px -17px rgba(3, 9, 12, .78), inset 0 1px 0 white;
+            color: #374151;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .station-sign::after {
+            content: "";
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            height: 8px;
+            background: var(--line-color);
+        }
+
+        .station-sign .previous { text-align: left; color: #64748b; }
+        .station-sign .next { text-align: right; color: #64748b; }
+
+        .station-neighbor {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: 0;
+            white-space: nowrap;
+        }
+
+        .station-neighbor.next { justify-content: flex-end; }
+
+        .station-direction {
+            color: #2f3b44;
+            font-size: 17px;
+            line-height: 1;
+        }
+
+        .station-copy {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            line-height: 1.05;
+        }
+
+        .station-copy strong {
+            overflow: hidden;
+            color: #3a424a;
+            font-size: 14px;
+            text-overflow: ellipsis;
+        }
+
+        .station-copy small {
+            margin-top: 3px;
+            color: #929ba2;
+            font-size: 7px;
+            font-weight: 800;
+            letter-spacing: .04em;
+        }
+
+        .station-current {
+            position: relative;
+            display: flex;
+            min-width: 170px;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 16px 5px;
+            color: #111827;
+            font-size: 24px;
+            letter-spacing: -.04em;
+        }
+
+        .station-current .station-copy { align-items: center; }
+        .station-current .station-copy strong { color: #111827; font-size: 23px; }
+        .station-current .station-copy small { color: #7f8991; font-size: 7px; letter-spacing: .08em; }
+
+        .station-badge {
+            display: grid;
+            width: 38px;
+            height: 38px;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--line-color);
+            color: white;
+            font-size: 10px;
+            letter-spacing: -.08em;
+        }
+
+        .station-badge.is-number {
+            font-size: 16px;
+            letter-spacing: 0;
+        }
+
+        @keyframes stationAlertBlink {
+            0%, 47% { opacity: 1; box-shadow: 0 0 5px 2px rgba(255, 35, 42, .78), 0 0 14px 4px rgba(255, 35, 42, .42); }
+            48%, 100% { opacity: .12; box-shadow: none; }
+        }
+
+        .screen-doors {
+            position: absolute;
+            right: 0;
+            left: 0;
+            bottom: var(--near-platform-floor);
+            z-index: 31;
+            height: var(--door-height);
+            pointer-events: none;
+            filter: drop-shadow(0 -12px 18px rgba(7, 12, 15, .28));
+        }
+
+        .screen-door-facade {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background: url('./assets/platform-screen-doors-clean-two-portals-v4.png') center / 100% 100% no-repeat;
+        }
+
+        .platform-door {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            z-index: 2;
+            width: var(--portal-width);
+            overflow: visible;
+        }
+
+        .platform-door::before,
+        .platform-door::after {
+            content: "";
+            position: absolute;
+            top: 13.7%;
+            bottom: 0;
+            z-index: 6;
+            width: clamp(7px, .48vw, 10px);
+            border: 1px solid rgba(20, 26, 29, .92);
+            background: linear-gradient(90deg, #1a2023 0%, #6c7478 34%, #30373a 67%, #111719 100%);
+            box-shadow: 0 0 4px rgba(0, 0, 0, .55), inset 1px 0 rgba(255, 255, 255, .28);
+        }
+
+        .platform-door::before { left: -5px; }
+        .platform-door::after { right: -5px; }
+
+        .door-station-sign {
+            position: absolute;
+            top: 2.1%;
+            left: 50%;
+            z-index: 7;
+            display: grid;
+            width: 100%;
+            height: 11.4%;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 8px 0;
+            overflow: hidden;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+            color: #f5f7f8;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, .82);
+            transform: translateX(-50%);
+        }
+
+        .door-station-side {
+            display: flex;
+            min-width: 0;
+            align-items: center;
+            gap: 4px;
+            color: rgba(239, 244, 246, .82);
+            font-size: clamp(6px, .48vw, 9px);
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .door-station-side.next { justify-content: flex-end; }
+
+        .door-station-side span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .door-station-center {
+            position: relative;
+            display: flex;
+            min-width: 84px;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding-bottom: 0;
+            color: #ffffff;
+        }
+
+        .door-station-center strong {
+            max-width: 74px;
+            overflow: hidden;
+            font-size: clamp(10px, .82vw, 15px);
+            font-weight: 1000;
+            letter-spacing: -.05em;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .door-line-badge {
+            display: grid;
+            width: clamp(22px, 1.65vw, 31px);
+            aspect-ratio: 1;
+            place-items: center;
+            border-radius: 50%;
+            border: 0;
+            background: var(--line-color);
+            color: white;
+            font-size: clamp(7px, .52vw, 10px);
+            font-weight: 1000;
+        }
+
+        .door-line-badge.is-number {
+            font-size: clamp(10px, .72vw, 14px);
+            letter-spacing: 0;
+        }
+
+        .door-alert-light {
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            width: 42px;
+            height: 4px;
+            border-radius: 999px;
+            background: #d71f27;
+            opacity: 0;
+            transform: translateX(-50%);
+        }
+
+        .screen-doors.is-open .door-alert-light {
+            animation: stationAlertBlink 620ms steps(1, end) infinite;
+        }
+
+        .platform-door.first {
+            --portal-width: 16.04vw;
+            left: calc(21.68% - var(--portal-width) / 2);
+        }
+
+        .platform-door.second {
+            --portal-width: 16.24vw;
+            left: calc(78.27% - var(--portal-width) / 2);
+        }
+
+        .platform-door-leaf {
+            position: absolute;
+            top: 14.42%;
+            bottom: 2.88%;
+            z-index: 2;
+            width: 50%;
+            background-position: center;
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            transition: transform 900ms cubic-bezier(.65, 0, .22, 1);
+            will-change: transform;
+        }
+
+        .platform-door.first .platform-door-leaf.left::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 5;
+            width: clamp(5px, .34vw, 7px);
+            border-left: 1px solid #080c0e;
+            background: linear-gradient(90deg, #090d0f 0 30%, #697277 30% 48%, #20272a 48% 72%, #080c0e 72% 100%);
+            box-shadow: 1px 0 3px rgba(0, 0, 0, .62), inset 1px 0 rgba(255, 255, 255, .24);
+            pointer-events: none;
+        }
+
+        .glass-safety-strip,
+        .door-warning-sticker {
+            position: absolute;
+            left: 50%;
+            z-index: 4;
+            display: block;
+            width: 86%;
+            background-position: center;
+            background-size: contain;
+            background-repeat: no-repeat;
+            transform: translateX(-50%);
+        }
+
+        .glass-safety-strip {
+            top: 53%;
+            aspect-ratio: 1299 / 133;
+            background-image: url('./assets/platform-glass-safety-strip-v1.png');
+            filter: drop-shadow(0 1px 1px rgba(11, 16, 18, .26));
+        }
+
+        .door-warning-sticker {
+            bottom: 5.5%;
+            aspect-ratio: 1037 / 215;
+            padding: 2.9% 4.5% 1.3% 22%;
+            background-image: url('./assets/platform-warning-gap-v1.png');
+            color: #201800;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .door-warning-sticker.no-rush {
+            background-image: url('./assets/platform-warning-no-rush-v1.png');
+        }
+
+        .door-warning-sticker strong,
+        .door-warning-sticker small {
+            display: block;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: clip;
+        }
+
+        .door-warning-sticker strong {
+            color: #d92c1d;
+            font-size: clamp(5px, .43vw, 8px);
+            font-weight: 1000;
+            letter-spacing: -.04em;
+        }
+
+        .door-warning-sticker small {
+            margin-top: 2%;
+            color: #2c230b;
+            font-size: clamp(3px, .27vw, 5px);
+            font-weight: 900;
+            letter-spacing: -.05em;
+        }
+
+        .platform-door.first .platform-door-leaf.left { background-image: url('./assets/platform-screen-door-left-a-v4.png'); }
+        .platform-door.first .platform-door-leaf.right { background-image: url('./assets/platform-screen-door-right-a-v4.png'); }
+        .platform-door.second .platform-door-leaf.left { background-image: url('./assets/platform-screen-door-left-b-v4.png'); }
+        .platform-door.second .platform-door-leaf.right { background-image: url('./assets/platform-screen-door-right-b-v4.png'); }
+
+        .platform-door-leaf.left {
+            left: 0;
+            transform: translateX(0);
+            transform-origin: left center;
+        }
+
+        .platform-door-leaf.right {
+            right: 0;
+            transform: translateX(0);
+            transform-origin: right center;
+        }
+
+        .screen-doors.is-open .platform-door-leaf.left { transform: translateX(-100%); }
+        .screen-doors.is-open .platform-door-leaf.right { transform: translateX(100%); }
+
+        .screen-end-cap {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            z-index: 8;
+            width: clamp(12px, .82vw, 18px);
+            border: 1px solid rgba(10, 15, 17, .94);
+            background: linear-gradient(90deg, #101619 0%, #51595d 38%, #242b2e 72%, #0c1113 100%);
+            box-shadow: 0 0 7px rgba(0, 0, 0, .68), inset 1px 0 rgba(255, 255, 255, .2);
+        }
+
+        .screen-end-cap.left { left: 0; }
+        .screen-end-cap.right { right: 0; transform: scaleX(-1); }
+
+        .screen-bottom-cap {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 7;
+            height: clamp(10px, .82vw, 16px);
+            border-top: 1px solid rgba(146, 154, 157, .62);
+            background: linear-gradient(180deg, #51585b 0%, #272d30 36%, #121719 100%);
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, .34);
+        }
+
+        .train-stage {
+            position: absolute;
+            right: 0;
+            bottom: calc(var(--near-platform-floor) + 8px);
+            left: 0;
+            z-index: 27;
+            height: calc(var(--door-height) - 8px);
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .train {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: -110.03vw;
+            display: flex;
+            width: 641.82vw;
+            --train-car-width: 106.97vw;
+            --train-door-width: 15.45vw;
+            transform: translateX(210.03vw);
+            transition: transform 2600ms cubic-bezier(.2, .72, .18, 1);
+            filter: drop-shadow(0 -12px 15px rgba(0,0,0,.28));
+            will-change: transform;
+        }
+
+        .train-stage.is-present .train { transform: translateX(0); }
+        .train-stage.is-departing .train {
+            transform: translateX(-538vw);
+            transition-duration: 10000ms;
+            transition-timing-function: cubic-bezier(.45, 0, .85, .45);
+        }
+        .train-stage.is-resetting .train { transition: none; }
+
+        .train-car {
+            position: relative;
+            flex: 0 0 var(--train-car-width);
+            height: 100%;
+            background: url('./assets/platform-train-dimensional-middle-v5.png') center top / 100% auto no-repeat;
+        }
+
+        .train-car.front-cab,
+        .train-car.rear-cab {
+            background-image: url('./assets/platform-train-dimensional-cab-left-v5.png');
+        }
+
+        .train-car.rear-cab { transform: scaleX(-1); }
+        .train-car.rear-cab::after { display: none; }
+
+        .train-car::after {
+            content: "";
+            position: absolute;
+            top: 10%;
+            right: -18px;
+            bottom: 7%;
+            z-index: 5;
+            width: 36px;
+            border-right: 2px solid #060809;
+            border-left: 2px solid #060809;
+            background:
+                linear-gradient(90deg, rgba(0, 0, 0, .72), transparent 20% 80%, rgba(0, 0, 0, .72)),
+                repeating-linear-gradient(90deg, #050708 0 3px, #2f3639 3px 5px, #0b0e0f 5px 8px);
+            box-shadow: 0 0 10px rgba(0, 0, 0, .72), inset 0 2px rgba(108, 117, 121, .28), inset 0 -2px rgba(0, 0, 0, .84);
+        }
+
+        .train-door-set {
+            position: absolute;
+            top: 21.5%;
+            z-index: 2;
+            width: var(--train-door-width);
+            height: 73.5%;
+            overflow: hidden;
+            background: #e8e8e6 url('./assets/platform-train-doorway-interior-v6.png') center 52% / cover no-repeat;
+            box-shadow: inset 0 0 18px rgba(12, 20, 24, .42), inset 0 -4px 0 #85898a;
+        }
+
+        .train-door-set.first {
+            --train-door-center: 24.74vw;
+            left: calc(var(--train-door-center) - var(--train-door-width) / 2);
+        }
+
+        .train-door-set.second {
+            --train-door-center: 81.33vw;
+            left: calc(var(--train-door-center) - var(--train-door-width) / 2);
+        }
+
+        .train-door-surface {
+            position: absolute;
+            top: -29.252%;
+            width: var(--train-car-width);
+            max-width: none;
+            height: 136.055%;
+            background: url('./assets/platform-train-dimensional-middle-v5.png') center top / var(--train-car-width) auto no-repeat;
+            pointer-events: none;
+        }
+
+        .train-door-leaf.left .train-door-surface {
+            left: calc(var(--train-door-width) / 2 - var(--train-door-center));
+        }
+
+        .train-door-leaf {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            z-index: 2;
+            width: 50%;
+            overflow: hidden;
+            transition: transform 780ms cubic-bezier(.42, 0, .22, 1);
+            will-change: transform;
+        }
+
+        .train-door-leaf.left { left: 0; }
+        .train-door-leaf.right { right: 0; }
+        .train-door-leaf.right .train-door-surface { left: calc(-1 * var(--train-door-center)); }
+        .train-stage.is-doors-open .train-door-leaf.left { transform: translateX(-100%); }
+        .train-stage.is-doors-open .train-door-leaf.right { transform: translateX(100%); }
+
+        @media (prefers-reduced-motion: reduce) {
+            .platform-door-leaf,
+            .train-door-leaf { transition-duration: 1ms; }
+            .train { transition-duration: 1ms; }
+        }
+
+        .hidden { display: none !important; }
+
+        .loading-message {
+            position: absolute;
+            right: 32px;
+            bottom: 28px;
+            z-index: 55;
+            padding: 10px 13px;
+            border: 1px solid rgba(255,255,255,.5);
+            border-radius: 14px;
+            background: rgba(15,23,42,.72);
+            color: white;
+            font-size: 10px;
+            font-weight: 800;
+            backdrop-filter: blur(12px);
+        }
+
+        @media (max-height: 820px) {
+            .app {
+                --door-height: 26.9vw;
+            }
+            .topbar { top: 16px; right: 20px; left: 20px; transform: scale(.94); transform-origin: top center; }
+            .focus-card { top: 104px; left: 30px; transform: scale(.9); transform-origin: top left; }
+            .focus-card:has(#setting-view:not(.hidden)) { top: 0; left: 0; transform: none; }
+            .station-board { top: 134px; transform: translateX(-50%) scale(.92); transform-origin: top center; }
+            .journey-map-panel { max-height: calc(100vh - 24px); }
+            .journey-map-layout { min-height: calc(100vh - 118px); }
+            .korea-map-shell { min-height: calc(100vh - 118px); }
+            #korea-map { height: calc(100vh - 118px); }
+        }
+
+        @media (max-width: 1120px) {
+            .journey-map-modal { padding-right: 24px; padding-left: 24px; }
+            .journey-map-panel { width: calc(100vw - 48px); }
+            .journey-map-layout { grid-template-columns: minmax(420px, 1fr) 340px; gap: 36px; }
+            .journey-region-panel { padding: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="app" aria-label="포커스서브웨이 공부시간 설정 화면">
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-mark" aria-hidden="true">🚇</span>
+                <span><strong>포커스서브웨이</strong><small>이동시간을 공부시간으로</small></span>
+            </div>
+
+            <div class="menu-scroll">
+                <div class="menu-row" id="region-menu" aria-label="권역 선택"></div>
+                <div class="menu-row" id="line-menu" aria-label="전철 선택"></div>
+            </div>
+
+            <div class="top-status" id="top-status"><span class="status-dot"></span><span id="status-text">시간표 불러오는 중</span></div>
+        </header>
+
+        <section class="focus-card" aria-label="공부 여정 설정">
+            <div id="setting-view">
+                <span class="card-badge">● 집중 운행 준비</span>
+                <p class="card-description">출발역과 도착역을 고르면 실제 열차 시간표의 역간 소요시간이 공부시간이 됩니다.</p>
+
+                <div class="route-fields">
+                    <div class="field">
+                        <label for="origin-select">출발역</label>
+                        <select id="origin-select" aria-label="출발역"></select>
+                    </div>
+                    <button class="swap-button" id="swap-button" type="button" aria-label="출발역과 도착역 바꾸기">⇄</button>
+                    <div class="field">
+                        <label for="destination-select">도착역</label>
+                        <select id="destination-select" aria-label="도착역"></select>
+                    </div>
+                </div>
+
+                <div class="duration-box" aria-live="polite">
+                    <div class="duration-copy"><span id="timetable-label">시간표 기준</span><strong id="route-summary">역을 선택해 주세요</strong></div>
+                    <div class="duration-value" id="duration-value">--<small>분</small></div>
+                </div>
+                <p class="calculation-note" id="calculation-note">시간표를 불러온 뒤 실제 열차별 역간 소요시간의 중앙값으로 계산합니다.</p>
+                <button class="primary-button" id="start-button" type="button" disabled>여정 준비 중</button>
+            </div>
+
+            <div id="timer-view" class="hidden">
+                <span class="card-badge">● 집중 운행 중</span>
+                <h2>목적지역까지<br>집중을 유지해요.</h2>
+                <p class="timer-route" id="timer-route"></p>
+                <div class="timer-clock" id="timer-clock">00:00</div>
+                <div class="progress" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+                <div class="timer-actions">
+                    <button class="pause-button" id="pause-button" type="button">일시정지</button>
+                    <button class="end-button" id="end-button" type="button">종료</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="station-board" id="station-board" aria-label="선택 구간 안내">
+            <div class="station-sign">
+                <span class="station-neighbor previous"><span class="station-direction">←</span><span class="station-copy"><strong id="previous-station">이전역</strong><small>PREVIOUS STATION</small></span></span>
+                <span class="station-current"><span class="station-badge" id="station-badge">대경</span><span class="station-copy"><strong id="current-station">현재역</strong><small>CURRENT STATION</small></span></span>
+                <span class="station-neighbor next"><span class="station-copy"><strong id="next-station">다음역</strong><small>NEXT STATION</small></span><span class="station-direction">→</span></span>
+            </div>
+        </section>
+
+        <div class="train-stage" id="train-stage" aria-hidden="true">
+            <div class="train">
+                <span class="train-car front-cab"></span>
+                <span class="train-car active-car">
+                    <span class="train-door-set first">
+                        <span class="train-door-leaf left"><span class="train-door-surface"></span></span>
+                        <span class="train-door-leaf right"><span class="train-door-surface"></span></span>
+                    </span>
+                    <span class="train-door-set second">
+                        <span class="train-door-leaf left"><span class="train-door-surface"></span></span>
+                        <span class="train-door-leaf right"><span class="train-door-surface"></span></span>
+                    </span>
+                </span>
+                <span class="train-car"></span>
+                <span class="train-car"></span>
+                <span class="train-car"></span>
+                <span class="train-car rear-cab"></span>
+            </div>
+        </div>
+
+        <div class="screen-doors" id="screen-doors" aria-hidden="true">
+            <span class="screen-door-facade"></span>
+            <span class="platform-door first">
+                <span class="door-station-sign"><span class="door-station-side previous">← <span data-door-station="previous">이전역</span></span><span class="door-station-center"><span class="door-line-badge" data-door-badge>대경</span><strong data-door-station="current">현재역</strong><i class="door-alert-light"></i></span><span class="door-station-side next"><span data-door-station="next">다음역</span> →</span></span>
+                <span class="platform-door-leaf left"><span class="glass-safety-strip"></span><span class="door-warning-sticker"><strong>발빠짐 주의</strong><small>진행방향과 타는 곳 사이가 넓습니다</small></span></span>
+                <span class="platform-door-leaf right"><span class="glass-safety-strip"></span><span class="door-warning-sticker no-rush"><strong>무리한 승차 금지</strong><small>사고발생, 열차지연의 원인입니다</small></span></span>
+            </span>
+            <span class="platform-door second">
+                <span class="door-station-sign"><span class="door-station-side previous">← <span data-door-station="previous">이전역</span></span><span class="door-station-center"><span class="door-line-badge" data-door-badge>대경</span><strong data-door-station="current">현재역</strong><i class="door-alert-light"></i></span><span class="door-station-side next"><span data-door-station="next">다음역</span> →</span></span>
+                <span class="platform-door-leaf left"><span class="glass-safety-strip"></span><span class="door-warning-sticker"><strong>발빠짐 주의</strong><small>진행방향과 타는 곳 사이가 넓습니다</small></span></span>
+                <span class="platform-door-leaf right"><span class="glass-safety-strip"></span><span class="door-warning-sticker no-rush"><strong>무리한 승차 금지</strong><small>사고발생, 열차지연의 원인입니다</small></span></span>
+            </span>
+            <span class="screen-end-cap left"></span>
+            <span class="screen-end-cap right"></span>
+            <span class="screen-bottom-cap"></span>
+        </div>
+
+        <div class="journey-map-modal" id="journey-map-modal" aria-hidden="true">
+            <button class="journey-map-backdrop" id="journey-map-backdrop" type="button" aria-label="지역 선택 지도 닫기"></button>
+            <section class="journey-map-panel" role="dialog" aria-modal="true" aria-labelledby="journey-map-title">
+                <header class="journey-map-header">
+                    <div class="journey-map-heading">
+                        <button class="journey-region-back hidden" id="journey-region-back" type="button" aria-label="전국 지도로 돌아가기">← 권역 다시 선택</button>
+                        <div class="journey-map-title">
+                            <span>여정 지역 선택</span>
+                            <h2 id="journey-map-title">어디에서 출발할까요?</h2>
+                        </div>
+                    </div>
+                    <button class="journey-map-close" id="journey-map-close" type="button" aria-label="닫기">×</button>
+                </header>
+                <div class="journey-map-layout">
+                    <div class="korea-map-shell">
+                        <svg id="korea-map" viewBox="0 0 420 620" role="img" aria-label="대한민국 지하철 운행 권역 지도"></svg>
+                        <span class="map-loading" id="map-loading">2026년 최신 지도 데이터를 불러오는 중...</span>
+                        <a class="map-attribution" href="https://github.com/vuski/admdongkor" target="_blank" rel="noreferrer">지도 경계: 통계청 SGIS · admdongkor 2026.07</a>
+                    </div>
+                    <aside class="journey-region-panel" aria-live="polite">
+                        <span class="journey-region-kicker">선택한 지하철 권역</span>
+                        <h3 id="journey-region-label">지역을 선택해 주세요</h3>
+                        <p class="journey-region-description" id="journey-region-description">지도에서 진하게 표시된 지역을 누르면 이용 가능한 노선이 나타납니다.</p>
+                        <div class="journey-line-list" id="journey-line-list"></div>
+                        <div class="journey-station-picker hidden" id="journey-station-picker">
+                            <div class="journey-station-heading"><strong>출발역과 도착역</strong><span>실제 시간표로 공부시간 계산</span></div>
+                            <div class="journey-station-fields">
+                                <div class="journey-station-field">
+                                    <label for="journey-origin-select">출발역</label>
+                                    <select id="journey-origin-select" aria-label="여정 출발역"></select>
+                                </div>
+                                <button class="journey-station-swap" id="journey-station-swap" type="button" aria-label="출발역과 도착역 바꾸기">⇄</button>
+                                <div class="journey-station-field">
+                                    <label for="journey-destination-select">도착역</label>
+                                    <select id="journey-destination-select" aria-label="여정 도착역"></select>
+                                </div>
+                            </div>
+                            <div class="journey-time-summary"><span id="journey-route-summary">역을 선택해 주세요</span><strong id="journey-duration-summary">--분</strong></div>
+                        </div>
+                        <button class="journey-confirm-button" id="journey-confirm-button" type="button" disabled>노선을 선택해 주세요</button>
+                    </aside>
+                </div>
+            </section>
+        </div>
+
+        <div class="loading-message" id="loading-message">실제 열차 시간표를 불러오고 있습니다.</div>
+    </main>
+
+    <script>
+        const regions = [
+            { id: 'seoul', label: '수도권', lines: [
+                ['seoul_line1','1호선','#0052a4','1'], ['seoul_line2','2호선','#00a84d','2'], ['seoul_line3','3호선','#ef7c1c','3'],
+                ['seoul_line4','4호선','#00a4e3','4'], ['seoul_line5','5호선','#996cac','5'], ['seoul_line6','6호선','#cd7c2f','6'],
+                ['seoul_line7','7호선','#747f00','7'], ['seoul_line8','8호선','#e6186c','8'], ['seoul_line9','9호선','#bdb092','9'],
+                ['incheon_line1','인천 1호선','#759cce','인1'], ['incheon_line2','인천 2호선','#f5a251','인2'],
+                ['airport','공항철도','#0090d2','공'], ['gyeongui_jungang','경의중앙선','#77c4a3','경'], ['gyeongchun','경춘선','#178c72','춘'],
+                ['gyeonggang','경강선','#0054a6','강'], ['shinbundang','신분당선','#d20f46','신'], ['suinbundang','수인분당선','#fabe00','수'],
+                ['seohae','서해선','#8fc31f','서'], ['gimpo_goldline','김포골드라인','#ad8605','김'], ['gtx_a','수도권광역급행철도','#9a6292','광']
+            ]},
+            { id: 'busan', label: '부산권', lines: [
+                ['busan_line1','1호선','#f06a00','1'], ['busan_line2','2호선','#81bf48','2'], ['busan_line3','3호선','#bb8c00','3'],
+                ['busan_line4','4호선','#217dcb','4'], ['busan_bglrt','부산김해경전철','#8652a1','부'], ['busan_donghae','동해선','#003da5','동']
+            ]},
+            { id: 'daegu', label: '대구권', lines: [
+                ['line1','1호선','#d93f5c','1'], ['line2','2호선','#00aa80','2'], ['line3','3호선','#ffb100','3'], ['daegyeong','대경선','#0054a6','대경']
+            ]},
+            { id: 'daejeon', label: '충청권', lines: [['daejeon_line1','대전 1호선','#007448','1']] },
+            { id: 'gwangju', label: '전남광주', lines: [['gwangju_line1','광주 1호선','#009088','1']] }
+        ];
+
+        const timetableFiles = {
+            seoul_line1:['./seoul_line1_timetable.js','SEOUL_LINE1_TIMETABLE'], seoul_line2:['./seoul_line2_timetable.js','SEOUL_LINE2_TIMETABLE'],
+            seoul_line3:['./seoul_line3_timetable.js','SEOUL_LINE3_TIMETABLE'], seoul_line4:['./seoul_line4_timetable.js','SEOUL_LINE4_TIMETABLE'],
+            seoul_line5:['./seoul_line5_timetable.js','SEOUL_LINE5_TIMETABLE'], seoul_line6:['./seoul_line6_timetable.js','SEOUL_LINE6_TIMETABLE'],
+            seoul_line7:['./seoul_line7_timetable.js','SEOUL_LINE7_TIMETABLE'], seoul_line8:['./seoul_line8_timetable.js','SEOUL_LINE8_TIMETABLE'],
+            seoul_line9:['./seoul_line9_timetable.js','SEOUL_LINE9_TIMETABLE'], incheon_line1:['./incheon_line1_timetable.js','INCHEON_LINE1_TIMETABLE'],
+            incheon_line2:['./incheon_line2_timetable.js','INCHEON_LINE2_TIMETABLE'], airport:['./airport_railroad_timetable.js','AIRPORT_RAILROAD_TIMETABLE'],
+            gyeongui_jungang:['./gyeongui_jungang_line_timetable.js','GYEONGUI_JUNGANG_LINE_TIMETABLE'], gyeongchun:['./gyeongchun_line_timetable.js','GYEONGCHUN_LINE_TIMETABLE'],
+            gyeonggang:['./gyeonggang_line_timetable.js','GYEONGGANG_LINE_TIMETABLE'], shinbundang:['./shinbundang_line_timetable.js','SHINBUNDANG_LINE_TIMETABLE'],
+            suinbundang:['./suinbundang_line_timetable.js','SUINBUNDANG_LINE_TIMETABLE'], seohae:['./seohae_line_timetable.js','SEOHAE_LINE_TIMETABLE'],
+            gimpo_goldline:['./gimpo_goldline_timetable.js','GIMPO_GOLDLINE_TIMETABLE'], gtx_a:['./gtx_a_timetable.js','GTX_A_TIMETABLE'],
+            busan_line1:['./busan_line1_timetable.js','BUSAN_LINE1_TIMETABLE'], busan_line2:['./busan_line2_timetable.js','BUSAN_LINE2_TIMETABLE'],
+            busan_line3:['./busan_line3_timetable.js','BUSAN_LINE3_TIMETABLE'], busan_line4:['./busan_line4_timetable.js','BUSAN_LINE4_TIMETABLE'],
+            busan_bglrt:['./busan_gimhae_lrt_timetable.js','BUSAN_GIMHAE_LRT_TIMETABLE'], busan_donghae:['./donghae_line_timetable.js','DONGHAE_LINE_TIMETABLE'],
+            line1:['./daegu_line1_timetable.js','DAEGU_LINE1_TIMETABLE'], line2:['./daegu_line2_timetable.js','DAEGU_LINE2_TIMETABLE'],
+            line3:['./daegu_line3_timetable.js','DAEGU_LINE3_TIMETABLE'], daegyeong:['./daegyeong_timetable.js','DAEGYEONG_TIMETABLE'],
+            daejeon_line1:['./daejeon_line1_timetable.js','DAEJEON_LINE1_TIMETABLE'], gwangju_line1:['./gwangju_line1_timetable.js','GWANGJU_LINE1_TIMETABLE']
+        };
+
+        const DAEGU_PRECOMPUTED_TRAVEL_TIME_FILE = ['./daegu_precomputed_travel_times.js?v=2', 'DAEGU_PRECOMPUTED_TRAVEL_TIMES'];
+        const daeguPrecomputedLineIds = new Set(['line1', 'line2', 'line3', 'daegyeong']);
+        const DAEJEON_GWANGJU_PRECOMPUTED_TRAVEL_TIME_FILE = ['./daejeon_gwangju_precomputed_travel_times.js?v=1', 'DAEJEON_GWANGJU_PRECOMPUTED_TRAVEL_TIMES'];
+        const daejeonGwangjuPrecomputedLineIds = new Set(['daejeon_line1', 'gwangju_line1']);
+        const BUSAN_PRECOMPUTED_TRAVEL_TIME_FILE = ['./busan_precomputed_travel_times.js?v=1', 'BUSAN_PRECOMPUTED_TRAVEL_TIMES'];
+        const busanPrecomputedLineIds = new Set(['busan_line1', 'busan_line2', 'busan_line3', 'busan_line4', 'busan_bglrt', 'busan_donghae']);
+        const SEOUL_PRECOMPUTED_TRAVEL_TIME_FILE = ['./seoul_precomputed_travel_times.js?v=1', 'SEOUL_PRECOMPUTED_TRAVEL_TIMES'];
+        const seoulPrecomputedLineIds = new Set([
+            'seoul_line1', 'seoul_line2', 'seoul_line3', 'seoul_line4', 'seoul_line5', 'seoul_line6', 'seoul_line7', 'seoul_line8', 'seoul_line9',
+            'incheon_line1', 'incheon_line2', 'airport', 'gyeongui_jungang', 'gyeongchun', 'gyeonggang', 'shinbundang', 'suinbundang',
+            'seohae', 'gimpo_goldline', 'gtx_a'
+        ]);
+
+        const aliases = {
+            line1: {'대구역':'대구'}, incheon_line2: {'서해구청':'서구청'},
+            gwangju_line1: {'학동.증심사입구':'학동 중심사입구','광주송정':'광주송정역'},
+            busan_line2: {'경성대.부경대':'경성대 부경대','국제금융센터.부산은행':'국제금융센터 부산은행'},
+            busan_bglrt: {'괘법 르네시떼':'괘법르네시떼','서부산 유통지구':'서부산유통지구','공항':'김해공항','등구':'동구','연지공원':'영지공원'}
+        };
+
+        const dom = Object.fromEntries([
+            'region-menu','line-menu','top-status','status-text','origin-select','destination-select','swap-button','timetable-label','route-summary',
+            'duration-value','calculation-note','start-button','setting-view','timer-view','timer-route','timer-clock','progress-bar','pause-button','end-button',
+            'previous-station','current-station','next-station','station-badge','loading-message',
+            'station-board','screen-doors','train-stage','journey-map-modal','journey-map-backdrop','journey-map-close','korea-map','map-loading',
+            'journey-region-label','journey-region-description','journey-line-list','journey-confirm-button','journey-station-picker',
+            'journey-origin-select','journey-destination-select','journey-station-swap','journey-route-summary','journey-duration-summary','journey-region-back'
+        ].map(id => [id.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), document.getElementById(id)]));
+
+        const KOREA_MAP_MODULE_URL = 'https://cdn.jsdelivr.net/npm/admdongkor@0.5.1/+esm';
+        const KOREA_MAP_VERSION = '20260701';
+        const localRailPathFiles = {
+            seoul_line1: ['./seoul_line1_rail_paths.js', 'SEOUL_LINE1_OSM_RAIL_PATHS'],
+            seoul_line2: ['./seoul_line2_rail_paths.js', 'SEOUL_LINE2_OSM_RAIL_PATHS'],
+            seoul_line3: ['./seoul_line3_rail_paths.js', 'SEOUL_LINE3_OSM_RAIL_PATH'],
+            seoul_line4: ['./seoul_line4_rail_paths.js', 'SEOUL_LINE4_OSM_RAIL_PATH'],
+            seoul_line5: ['./seoul_line5_rail_paths.js', 'SEOUL_LINE5_OSM_RAIL_PATHS'],
+            seoul_line6: ['./seoul_line6_rail_paths.js', 'SEOUL_LINE6_OSM_RAIL_PATHS'],
+            seoul_line7: ['./seoul_line7_rail_path.js', 'SEOUL_LINE7_OSM_RAIL_PATH'],
+            seoul_line8: ['./seoul_line8_rail_path.js', 'SEOUL_LINE8_OSM_RAIL_PATH'],
+            seoul_line9: ['./seoul_line9_rail_path.js', 'SEOUL_LINE9_OSM_RAIL_PATH'],
+            gyeongui_jungang: ['./gyeongui_jungang_rail_paths.js', 'GYEONGUI_JUNGANG_OSM_RAIL_PATHS'],
+            gyeongchun: ['./gyeongchun_rail_paths.js', 'GYEONGCHUN_OSM_RAIL_PATHS'],
+            busan_donghae: ['./donghae_line_rail_path.js', 'DONGHAE_LINE_OSM_RAIL_PATH'],
+            line1: ['./daegu_line1_rail_path.js', 'DAEGU_LINE1_OSM_RAIL_PATH'],
+            line2: ['./daegu_line2_rail_path.js', 'DAEGU_LINE2_OSM_RAIL_PATH'],
+            line3: ['./daegu_line3_rail_path.js', 'DAEGU_LINE3_OSM_RAIL_PATH'],
+            daegyeong: ['./daegyeong_rail_path.js', 'DAEGYEONG_OSM_RAIL_PATH'],
+            daejeon_line1: ['./daejeon_line1_rail_path.js', 'DAEJEON_LINE1_OSM_RAIL_PATH'],
+            gwangju_line1: ['./gwangju_line1_rail_path.js', 'GWANGJU_LINE1_OSM_RAIL_PATH']
+        };
+        const regionMapColors = {
+            seoul: '#2563eb',
+            busan: '#f97316',
+            daegu: '#df3158',
+            daejeon: '#168a58',
+            gwangju: '#009088'
+        };
+
+        let currentRegion = 'daegu';
+        let currentLine = 'daegyeong';
+        let currentSource = null;
+        let origin = '';
+        let destination = '';
+        let durationSeconds = 0;
+        let durationSamples = [];
+        let loadSequence = 0;
+        let timerHandle = 0;
+        let trainSequenceHandles = [];
+        let trainSequenceStartedAt = 0;
+        let trainSequenceElapsed = 0;
+        let trainSequenceNextStepIndex = 0;
+        let trainSequencePaused = false;
+        let pausedTrainAnimations = [];
+        let session = null;
+        let mapLoaded = false;
+        let mapLoadingPromise = null;
+        let mapProject = null;
+        let mapRegionViewBounds = {};
+        let mapRegionGeoBounds = {};
+        let mapRouteLayer = null;
+        let mapAreaLabelLayer = null;
+        let mapViewAnimationHandle = 0;
+        let daeguPrecomputedLoadingPromise = null;
+        let daejeonGwangjuPrecomputedLoadingPromise = null;
+        let busanPrecomputedLoadingPromise = null;
+        let seoulPrecomputedLoadingPromise = null;
+        const regionRouteCache = new Map();
+        let selectedJourneyRegion = currentRegion;
+        let selectedJourneyLine = currentLine;
+
+        function lineMeta(lineId = currentLine) {
+            for (const region of regions) {
+                const line = region.lines.find(item => item[0] === lineId);
+                if (line) return { id: line[0], label: line[1], color: line[2], badge: line[3], region: region.id };
+            }
+            return { id: lineId, label: '현재 노선', color: '#0054a6', badge: '철', region: currentRegion };
+        }
+
+        function dayType() {
+            const day = new Date().getDay();
+            if (day === 0) return 'holiday';
+            if (day === 6) return 'saturday';
+            return 'weekday';
+        }
+
+        function dayLabel() {
+            return dayType() === 'holiday' ? '휴일' : dayType() === 'saturday' ? '토요일' : '평일';
+        }
+
+        function renderMenus() {
+            dom.regionMenu.innerHTML = `<span class="menu-label">권역</span>` + regions.map(region =>
+                `<button class="menu-button ${region.id === currentRegion ? 'active' : ''}" data-region="${region.id}" type="button">${region.label}</button>`
+            ).join('');
+            const region = regions.find(item => item.id === currentRegion);
+            dom.lineMenu.innerHTML = `<span class="menu-label">전철</span>` + region.lines.map(line =>
+                `<button class="menu-button ${line[0] === currentLine ? 'active' : ''}" data-line="${line[0]}" type="button">${line[1]}</button>`
+            ).join('');
+        }
+
+        function setTheme() {
+            const meta = lineMeta();
+            const hasNumericBadge = /^\d+$/.test(meta.badge);
+            document.documentElement.style.setProperty('--line-color', meta.color);
+            document.documentElement.style.setProperty('--line-color-dark', shadeColor(meta.color, -28));
+            dom.stationBadge.textContent = meta.badge;
+            dom.stationBadge.classList.toggle('is-number', hasNumericBadge);
+            document.querySelectorAll('[data-door-badge]').forEach(node => {
+                node.textContent = meta.badge;
+                node.classList.toggle('is-number', hasNumericBadge);
+            });
+        }
+
+        function shadeColor(hex, amount) {
+            const value = hex.replace('#','');
+            const number = parseInt(value, 16);
+            const adjust = channel => Math.max(0, Math.min(255, channel + amount));
+            return `#${[number >> 16, (number >> 8) & 255, number & 255].map(channel => adjust(channel).toString(16).padStart(2,'0')).join('')}`;
+        }
+
+        function featureCenter(feature) {
+            const box = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
+            visitCoordinates(feature.geometry, ([x, y]) => {
+                box.minX = Math.min(box.minX, x);
+                box.maxX = Math.max(box.maxX, x);
+                box.minY = Math.min(box.minY, y);
+                box.maxY = Math.max(box.maxY, y);
+            });
+            return [(box.minX + box.maxX) / 2, (box.minY + box.maxY) / 2];
+        }
+
+        function featureRegion(feature) {
+            const properties = feature.properties || {};
+            const province = String(properties.sidonm || properties.CTP_KOR_NM || properties.province || '');
+            const municipality = String(properties.sggnm || properties.SIG_KOR_NM || properties.municipality || '');
+            const searchable = `${province} ${municipality} ${Object.values(properties).join(' ')}`.toLowerCase();
+            const [longitude, latitude] = featureCenter(feature);
+
+            if (/서울|인천|경기|seoul|incheon|gyeonggi/.test(province) || /천안|아산|춘천|cheonan|asan|chuncheon/.test(municipality)) return 'seoul';
+            if (/대구|daegu/.test(province) || /구미|칠곡|경산|gumi|chilgok|gyeongsan/.test(municipality)) return 'daegu';
+            if (/부산|울산|busan|ulsan/.test(province) || /김해|양산|gimhae|yangsan/.test(municipality)) return 'busan';
+            if (/대전|daejeon/.test(province)) return 'daejeon';
+            if (/광주광역시|gwangju metropolitan/.test(province)) return 'gwangju';
+            const compactMunicipality = municipality.replace(/\s/g, '');
+            const isFormerGwangjuDistrict = ['동구', '서구', '남구', '북구', '광산구'].some(name => compactMunicipality.endsWith(name));
+            if (/전남광주|jeonnam.*gwangju|gwangju.*jeonnam/.test(searchable)
+                && isFormerGwangjuDistrict
+                && longitude >= 126.65 && longitude <= 127.05 && latitude >= 34.95 && latitude <= 35.35) return 'gwangju';
+            return '';
+        }
+
+        function visitCoordinates(geometry, visitor) {
+            const walk = value => {
+                if (!Array.isArray(value)) return;
+                if (typeof value[0] === 'number' && typeof value[1] === 'number') {
+                    visitor(value);
+                    return;
+                }
+                value.forEach(walk);
+            };
+            if (geometry) walk(geometry.coordinates);
+        }
+
+        function geometryPath(geometry, project) {
+            const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.type === 'MultiPolygon' ? geometry.coordinates : [];
+            return polygons.map(polygon => polygon.map(ring => ring.map((point, index) => {
+                const [x, y] = project(point);
+                return `${index ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join('') + 'Z').join('')).join('');
+        }
+
+        function regionAreaName(feature) {
+            const properties = feature.properties || {};
+            const province = String(properties.sidonm || properties.CTP_KOR_NM || properties.province || '');
+            const municipality = String(properties.sggnm || properties.SIG_KOR_NM || properties.municipality || '');
+            const metropolitan = [
+                ['서울', '서울'], ['인천', '인천'], ['부산', '부산'], ['울산', '울산'],
+                ['대구', '대구'], ['대전', '대전'], ['광주', '광주']
+            ].find(([keyword]) => province.includes(keyword));
+            if (metropolitan) return metropolitan[1];
+
+            const localName = municipality.replace(province, '').trim();
+            const city = localName.match(/([가-힣]+시)/)?.[1];
+            if (city) return city;
+            const county = localName.match(/([가-힣]+군)/)?.[1];
+            if (county) return county;
+            return '';
+        }
+
+        function updateMapSelection() {
+            dom.koreaMap.querySelectorAll('[data-map-region]').forEach(path => {
+                path.classList.toggle('selected', path.dataset.mapRegion === selectedJourneyRegion);
+            });
+        }
+
+        function drawKoreaMap(featureCollection) {
+            const features = featureCollection.features || [];
+            const bounds = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
+            const geographicPoint = ([longitude, latitude]) => {
+                const clampedLatitude = Math.max(-85, Math.min(85, latitude));
+                const radians = Math.PI / 180;
+                return [longitude, Math.log(Math.tan(Math.PI / 4 + clampedLatitude * radians / 2)) / radians];
+            };
+            features.forEach(feature => visitCoordinates(feature.geometry, coordinate => {
+                const [x, y] = geographicPoint(coordinate);
+                bounds.minX = Math.min(bounds.minX, x);
+                bounds.maxX = Math.max(bounds.maxX, x);
+                bounds.minY = Math.min(bounds.minY, y);
+                bounds.maxY = Math.max(bounds.maxY, y);
+            }));
+
+            if (!Number.isFinite(bounds.minX)) throw new Error('지도 경계가 없습니다.');
+
+            const width = 420;
+            const height = 620;
+            const padding = 25;
+            const scale = Math.min((width - padding * 2) / (bounds.maxX - bounds.minX), (height - padding * 2) / (bounds.maxY - bounds.minY));
+            const drawnWidth = (bounds.maxX - bounds.minX) * scale;
+            const drawnHeight = (bounds.maxY - bounds.minY) * scale;
+            const offsetX = (width - drawnWidth) / 2;
+            const offsetY = (height - drawnHeight) / 2;
+            const project = coordinate => {
+                const [x, y] = geographicPoint(coordinate);
+                return [offsetX + (x - bounds.minX) * scale, offsetY + (bounds.maxY - y) * scale];
+            };
+            const regionBounds = {};
+            const regionGeoBounds = {};
+            const areaLabelBounds = {};
+            const fragment = document.createDocumentFragment();
+
+            features.forEach(feature => {
+                const regionId = featureRegion(feature);
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', geometryPath(feature.geometry, project));
+                path.setAttribute('fill-rule', 'evenodd');
+                path.classList.add('map-province');
+
+                if (regionId) {
+                    const region = regions.find(item => item.id === regionId);
+                    path.classList.add('metro-region');
+                    path.dataset.mapRegion = regionId;
+                    path.style.setProperty('--region-color', regionMapColors[regionId]);
+                    path.setAttribute('role', 'button');
+                    path.setAttribute('tabindex', '0');
+                    const ariaAreaName = feature.properties?.sggnm || feature.properties?.SIG_KOR_NM || region.label;
+                    path.setAttribute('aria-label', `${ariaAreaName} · ${region.label} 지하철 선택`);
+                    path.addEventListener('click', () => selectJourneyRegion(regionId));
+                    path.addEventListener('keydown', event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            selectJourneyRegion(regionId);
+                        }
+                    });
+
+                    const box = regionBounds[regionId] ||= { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
+                    const geoBox = regionGeoBounds[regionId] ||= { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
+                    const areaName = regionAreaName(feature);
+                    const areaBox = areaName
+                        ? (areaLabelBounds[regionId] ||= {})[areaName] ||= { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
+                        : null;
+                    visitCoordinates(feature.geometry, coordinate => {
+                        const [x, y] = project(coordinate);
+                        box.minX = Math.min(box.minX, x);
+                        box.maxX = Math.max(box.maxX, x);
+                        box.minY = Math.min(box.minY, y);
+                        box.maxY = Math.max(box.maxY, y);
+                        geoBox.minX = Math.min(geoBox.minX, coordinate[0]);
+                        geoBox.maxX = Math.max(geoBox.maxX, coordinate[0]);
+                        geoBox.minY = Math.min(geoBox.minY, coordinate[1]);
+                        geoBox.maxY = Math.max(geoBox.maxY, coordinate[1]);
+                        if (areaBox) {
+                            areaBox.minX = Math.min(areaBox.minX, x);
+                            areaBox.maxX = Math.max(areaBox.maxX, x);
+                            areaBox.minY = Math.min(areaBox.minY, y);
+                            areaBox.maxY = Math.max(areaBox.maxY, y);
+                        }
+                    });
+                }
+
+                fragment.appendChild(path);
+            });
+
+            dom.koreaMap.replaceChildren(fragment);
+
+            Object.entries(regionBounds).forEach(([regionId, box]) => {
+                const region = regions.find(item => item.id === regionId);
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.classList.add('map-region-label');
+                label.setAttribute('x', String((box.minX + box.maxX) / 2));
+                label.setAttribute('y', String((box.minY + box.maxY) / 2));
+                label.setAttribute('dy', '.35em');
+                label.textContent = region.label;
+                dom.koreaMap.appendChild(label);
+            });
+
+            mapRouteLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            mapRouteLayer.classList.add('map-route-layer');
+            dom.koreaMap.appendChild(mapRouteLayer);
+
+            mapAreaLabelLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            mapAreaLabelLayer.classList.add('map-area-label-layer');
+            Object.entries(areaLabelBounds).forEach(([regionId, labels]) => {
+                Object.entries(labels).forEach(([name, box]) => {
+                    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    label.classList.add('map-area-label');
+                    label.dataset.mapAreaRegion = regionId;
+                    label.setAttribute('x', String((box.minX + box.maxX) / 2));
+                    label.setAttribute('y', String((box.minY + box.maxY) / 2));
+                    label.setAttribute('dy', '.35em');
+                    label.textContent = name;
+                    mapAreaLabelLayer.appendChild(label);
+                });
+            });
+            dom.koreaMap.appendChild(mapAreaLabelLayer);
+            mapProject = project;
+            mapRegionViewBounds = regionBounds;
+            mapRegionGeoBounds = regionGeoBounds;
+
+            updateMapSelection();
+        }
+
+        function loadKoreaMap() {
+            if (mapLoaded) return Promise.resolve();
+            if (mapLoadingPromise) return mapLoadingPromise;
+
+            dom.mapLoading.classList.remove('hidden', 'error');
+            dom.mapLoading.textContent = '2026년 최신 지도 데이터를 불러오는 중...';
+            mapLoadingPromise = import(KOREA_MAP_MODULE_URL)
+                .then(async adk => {
+                    const availableVersions = typeof adk.versions === 'function' ? adk.versions() : [];
+                    const latestVersion = availableVersions.includes(KOREA_MAP_VERSION) ? KOREA_MAP_VERSION : availableVersions.at(-1);
+                    if (!latestVersion || typeof adk.get !== 'function') throw new Error('최신 지도 버전을 확인하지 못했습니다.');
+                    const featureCollection = await adk.get(latestVersion, 'sgg');
+                    return { featureCollection, latestVersion };
+                })
+                .then(({ featureCollection, latestVersion }) => {
+                    drawKoreaMap(featureCollection);
+                    mapLoaded = true;
+                    dom.mapLoading.classList.add('hidden');
+                    const credit = document.querySelector('.map-attribution');
+                    if (credit) credit.textContent = `지도 경계: 통계청 SGIS · admdongkor ${latestVersion.slice(0, 4)}.${latestVersion.slice(4, 6)}`;
+                })
+                .catch(error => {
+                    console.error(error);
+                    dom.mapLoading.textContent = '지도를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.';
+                    dom.mapLoading.classList.add('error');
+                    mapLoadingPromise = null;
+                });
+            return mapLoadingPromise;
+        }
+
+        function showJourneyRegionPrompt() {
+            selectedJourneyRegion = '';
+            selectedJourneyLine = '';
+            dom.journeyRegionBack.classList.add('hidden');
+            dom.journeyRegionLabel.textContent = '권역을 선택해 주세요';
+            dom.journeyRegionDescription.textContent = '전국 지도에서 이용할 지하철 권역을 먼저 선택해 주세요.';
+            dom.journeyLineList.innerHTML = '';
+            dom.journeyStationPicker.classList.add('hidden');
+            dom.journeyConfirmButton.disabled = true;
+            dom.journeyConfirmButton.textContent = '지도에서 권역을 선택해 주세요';
+        }
+
+        function animateMapViewBox(targetViewBox, duration = 680) {
+            window.cancelAnimationFrame(mapViewAnimationHandle);
+            const target = String(targetViewBox).trim().split(/\s+/).map(Number);
+            const start = String(dom.koreaMap.getAttribute('viewBox') || '0 0 420 620').trim().split(/\s+/).map(Number);
+            if (target.length !== 4 || start.length !== 4 || target.some(value => !Number.isFinite(value))) return;
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                dom.koreaMap.setAttribute('viewBox', target.join(' '));
+                return;
+            }
+            const startedAt = performance.now();
+            const frame = now => {
+                const progress = Math.min(1, (now - startedAt) / duration);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const current = start.map((value, index) => value + (target[index] - value) * eased);
+                dom.koreaMap.setAttribute('viewBox', current.join(' '));
+                if (progress < 1) mapViewAnimationHandle = window.requestAnimationFrame(frame);
+            };
+            mapViewAnimationHandle = window.requestAnimationFrame(frame);
+        }
+
+        function resetNationalMap(animate = false) {
+            if (!mapLoaded) return;
+            dom.koreaMap.classList.remove('is-region-view', 'is-seoul-view');
+            if (animate) animateMapViewBox('0 0 420 620');
+            else dom.koreaMap.setAttribute('viewBox', '0 0 420 620');
+            dom.koreaMap.querySelectorAll('.map-province').forEach(path => path.classList.remove('map-region-focus'));
+            dom.koreaMap.querySelectorAll('.map-area-label').forEach(label => label.classList.remove('active'));
+            mapRouteLayer?.replaceChildren();
+            updateMapSelection();
+        }
+
+        function fittedRegionViewBox(box, regionId = '') {
+            const paddingScale = regionId === 'seoul' ? .86 : 1.28;
+            let width = Math.max(1, box.maxX - box.minX) * paddingScale;
+            let height = Math.max(1, box.maxY - box.minY) * paddingScale;
+            const targetAspect = 420 / 620;
+            if (width / height < targetAspect) width = height * targetAspect;
+            else height = width / targetAspect;
+            const centerX = (box.minX + box.maxX) / 2;
+            const centerY = (box.minY + box.maxY) / 2;
+            return `${centerX - width / 2} ${centerY - height / 2} ${width} ${height}`;
+        }
+
+        function isolateRegionMap(regionId) {
+            const box = mapRegionViewBounds[regionId];
+            if (!box) return;
+            dom.koreaMap.classList.add('is-region-view');
+            dom.koreaMap.classList.toggle('is-seoul-view', regionId === 'seoul');
+            animateMapViewBox(fittedRegionViewBox(box, regionId));
+            dom.koreaMap.querySelectorAll('.map-province').forEach(path => {
+                path.classList.toggle('map-region-focus', path.dataset.mapRegion === regionId);
+            });
+            dom.koreaMap.querySelectorAll('.map-area-label').forEach(label => {
+                label.classList.toggle('active', label.dataset.mapAreaRegion === regionId);
+            });
+            mapRouteLayer?.replaceChildren();
+            loadRegionRoutes(regionId);
+        }
+
+        function updateRouteSelection(lineId = selectedJourneyLine) {
+            if (!mapRouteLayer) return;
+            const selectedPaths = [];
+            mapRouteLayer.querySelectorAll('.map-route-line').forEach(path => {
+                const selected = Boolean(lineId) && path.dataset.routeLine === lineId;
+                path.classList.toggle('is-selected', selected);
+                path.classList.toggle('is-dimmed', Boolean(lineId) && !selected);
+                if (selected) selectedPaths.push(path);
+            });
+            selectedPaths.forEach(path => mapRouteLayer.appendChild(path));
+        }
+
+        function normalizeRailPaths(value) {
+            if (!value) return [];
+            if (Array.isArray(value)) return value.length && Array.isArray(value[0]) && typeof value[0][0] === 'number' ? [value] : [];
+            if (typeof value === 'object') return Object.values(value).flatMap(normalizeRailPaths);
+            return [];
+        }
+
+        function renderRegionRoutes(regionId, routes) {
+            if (!mapRouteLayer || !mapProject || selectedJourneyRegion !== regionId) return;
+            const fragment = document.createDocumentFragment();
+
+            routes.forEach(({ lineId, paths }) => {
+                const color = lineMeta(lineId).color;
+                paths.forEach(points => {
+                    if (!Array.isArray(points) || points.length < 2) return;
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.classList.add('map-route-line');
+                    path.dataset.routeLine = lineId;
+                    path.style.setProperty('--route-color', color);
+                    path.setAttribute('d', points.map((point, index) => {
+                        const [x, y] = mapProject([point[1], point[0]]);
+                        return `${index ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`;
+                    }).join(''));
+                    fragment.appendChild(path);
+                });
+            });
+
+            mapRouteLayer.replaceChildren(fragment);
+            updateRouteSelection();
+        }
+
+        function loadRailPathScript(lineId) {
+            const config = localRailPathFiles[lineId];
+            if (!config) return Promise.resolve(null);
+            const existing = readGlobal(config[1]);
+            if (existing) return Promise.resolve(existing);
+
+            return new Promise(resolve => {
+                const script = document.createElement('script');
+                script.src = config[0];
+                script.async = true;
+                script.onload = () => resolve(readGlobal(config[1]));
+                script.onerror = () => resolve(null);
+                document.head.appendChild(script);
+            });
+        }
+
+        function loadRegionRoutes(regionId) {
+            const cached = regionRouteCache.get(regionId);
+            if (cached) {
+                renderRegionRoutes(regionId, cached);
+                return Promise.resolve(cached);
+            }
+
+            const region = regions.find(item => item.id === regionId);
+            if (!region) return Promise.resolve([]);
+            const availableLines = region.lines.filter(line => localRailPathFiles[line[0]]);
+            if (!availableLines.length) {
+                mapRouteLayer?.replaceChildren();
+                return Promise.resolve([]);
+            }
+            dom.mapLoading.classList.remove('hidden', 'error');
+            dom.mapLoading.textContent = '저장된 실제 철도 노선을 불러오는 중...';
+
+            return Promise.all(availableLines.map(async line => ({
+                lineId: line[0],
+                paths: normalizeRailPaths(await loadRailPathScript(line[0]))
+            })))
+                .then(routes => {
+                    const loadedRoutes = routes.filter(route => route.paths.length);
+                    regionRouteCache.set(regionId, loadedRoutes);
+                    renderRegionRoutes(regionId, loadedRoutes);
+                    dom.mapLoading.classList.add('hidden');
+                    return loadedRoutes;
+                })
+                .catch(error => {
+                    console.error(error);
+                    dom.mapLoading.textContent = '저장된 노선 데이터를 읽지 못했습니다.';
+                    dom.mapLoading.classList.add('error');
+                    window.setTimeout(() => dom.mapLoading.classList.add('hidden'), 2600);
+                    return [];
+                });
+        }
+
+        function renderJourneyRegion(regionId, preferredLine = '') {
+            const region = regions.find(item => item.id === regionId);
+            if (!region) return;
+            selectedJourneyRegion = regionId;
+            selectedJourneyLine = region.lines.some(line => line[0] === preferredLine) ? preferredLine : '';
+            dom.journeyRegionLabel.textContent = region.label;
+            dom.journeyRegionDescription.textContent = `${region.lines.length}개 노선 중 이용할 노선을 선택해 주세요.`;
+            dom.journeyLineList.innerHTML = region.lines.map(line => `
+                <button class="journey-line-button ${line[0] === selectedJourneyLine ? 'active' : ''}" data-journey-line="${line[0]}" type="button" style="--button-color:${line[2]}">
+                    <span class="journey-line-dot ${/^\d+$/.test(line[3]) ? 'is-number' : ''}">${line[3]}</span><span class="journey-line-name">${line[1]}</span>
+                </button>
+            `).join('');
+            if (selectedJourneyLine && selectedJourneyLine === currentLine && currentSource) {
+                renderJourneyStations();
+            } else {
+                dom.journeyStationPicker.classList.add('hidden');
+                dom.journeyConfirmButton.disabled = true;
+                dom.journeyConfirmButton.textContent = '노선을 선택해 주세요';
+            }
+            updateMapSelection();
+        }
+
+        function renderJourneyStations() {
+            if (!selectedJourneyLine || selectedJourneyLine !== currentLine || !currentSource?.stations?.length) {
+                dom.journeyStationPicker.classList.add('hidden');
+                dom.journeyConfirmButton.disabled = true;
+                dom.journeyConfirmButton.textContent = selectedJourneyLine ? '이 노선의 시간표가 없습니다' : '노선을 선택해 주세요';
+                return;
+            }
+
+            const stations = currentSource.stations.map(station => normalizeName(station.name));
+            const options = stations.map(station => `<option value="${station}">${station}</option>`).join('');
+            dom.journeyOriginSelect.innerHTML = options;
+            dom.journeyDestinationSelect.innerHTML = options;
+            dom.journeyOriginSelect.value = origin;
+            dom.journeyDestinationSelect.value = destination;
+            dom.journeyStationPicker.classList.remove('hidden');
+            updateJourneyRouteSummary();
+        }
+
+        function updateJourneyRouteSummary() {
+            const minutes = durationSeconds ? Math.max(1, Math.round(durationSeconds / 60)) : 0;
+            dom.journeyRouteSummary.textContent = origin && destination ? `${origin} → ${destination}` : '출발역과 도착역을 선택해 주세요';
+            dom.journeyDurationSummary.textContent = minutes ? `${minutes}분` : '--분';
+            dom.journeyConfirmButton.disabled = !durationSeconds || !selectedJourneyLine;
+            dom.journeyConfirmButton.textContent = durationSeconds
+                ? `${minutes}분 여정 시작`
+                : currentSource?.precomputed ? '현재 직통 운행이 없는 구간입니다' : '다른 구간을 선택해 주세요';
+        }
+
+        function syncJourneyRoute() {
+            origin = dom.journeyOriginSelect.value;
+            destination = dom.journeyDestinationSelect.value;
+            dom.originSelect.value = origin;
+            dom.destinationSelect.value = destination;
+            calculateDuration();
+            updateJourneyRouteSummary();
+        }
+
+        function selectJourneyRegion(regionId) {
+            dom.journeyRegionBack.classList.remove('hidden');
+            renderJourneyRegion(regionId);
+            isolateRegionMap(regionId);
+        }
+
+        function returnToRegionSelection() {
+            showJourneyRegionPrompt();
+            resetNationalMap(true);
+        }
+
+        async function selectJourneyLine(lineId) {
+            const region = regions.find(item => item.id === selectedJourneyRegion);
+            if (!region || !region.lines.some(line => line[0] === lineId)) return;
+
+            selectedJourneyLine = lineId;
+            currentRegion = selectedJourneyRegion;
+            currentLine = lineId;
+            origin = '';
+            destination = '';
+            dom.journeyStationPicker.classList.add('hidden');
+            dom.journeyLineList.querySelectorAll('[data-journey-line]').forEach(button => {
+                button.classList.toggle('active', button.dataset.journeyLine === lineId);
+            });
+            updateRouteSelection(lineId);
+            dom.journeyConfirmButton.disabled = true;
+            dom.journeyConfirmButton.textContent = '시간표 불러오는 중...';
+            renderMenus();
+            setTheme();
+            await loadTimetable(currentLine);
+
+            if (currentLine !== lineId || selectedJourneyLine !== lineId) return;
+            renderJourneyStations();
+        }
+
+        function openJourneyMap() {
+            if (!durationSeconds) return;
+            showJourneyRegionPrompt();
+            dom.journeyMapModal.classList.add('is-open');
+            dom.journeyMapModal.setAttribute('aria-hidden', 'false');
+            loadKoreaMap().then(resetNationalMap);
+            window.setTimeout(() => dom.journeyMapClose.focus(), 80);
+        }
+
+        function closeJourneyMap() {
+            dom.journeyMapModal.classList.remove('is-open');
+            dom.journeyMapModal.setAttribute('aria-hidden', 'true');
+            dom.startButton.focus();
+        }
+
+        function confirmJourney() {
+            if (!selectedJourneyLine || !durationSeconds) return;
+            closeJourneyMap();
+            startSession();
+        }
+
+        function readGlobal(name) {
+            try { return (0, eval)(`typeof ${name} !== 'undefined' ? ${name} : null`); }
+            catch (_) { return null; }
+        }
+
+        function loadDaeguPrecomputedTravelTimes() {
+            const existing = readGlobal(DAEGU_PRECOMPUTED_TRAVEL_TIME_FILE[1]);
+            if (existing) return Promise.resolve(existing);
+            if (daeguPrecomputedLoadingPromise) return daeguPrecomputedLoadingPromise;
+
+            daeguPrecomputedLoadingPromise = new Promise(resolve => {
+                const script = document.createElement('script');
+                script.src = DAEGU_PRECOMPUTED_TRAVEL_TIME_FILE[0];
+                script.async = true;
+                script.onload = () => resolve(readGlobal(DAEGU_PRECOMPUTED_TRAVEL_TIME_FILE[1]));
+                script.onerror = () => resolve(null);
+                document.head.appendChild(script);
+            }).finally(() => { daeguPrecomputedLoadingPromise = null; });
+            return daeguPrecomputedLoadingPromise;
+        }
+
+        function loadDaejeonGwangjuPrecomputedTravelTimes() {
+            const existing = readGlobal(DAEJEON_GWANGJU_PRECOMPUTED_TRAVEL_TIME_FILE[1]);
+            if (existing) return Promise.resolve(existing);
+            if (daejeonGwangjuPrecomputedLoadingPromise) return daejeonGwangjuPrecomputedLoadingPromise;
+
+            daejeonGwangjuPrecomputedLoadingPromise = new Promise(resolve => {
+                const script = document.createElement('script');
+                script.src = DAEJEON_GWANGJU_PRECOMPUTED_TRAVEL_TIME_FILE[0];
+                script.async = true;
+                script.onload = () => resolve(readGlobal(DAEJEON_GWANGJU_PRECOMPUTED_TRAVEL_TIME_FILE[1]));
+                script.onerror = () => resolve(null);
+                document.head.appendChild(script);
+            }).finally(() => { daejeonGwangjuPrecomputedLoadingPromise = null; });
+            return daejeonGwangjuPrecomputedLoadingPromise;
+        }
+
+        function loadBusanPrecomputedTravelTimes() {
+            const existing = readGlobal(BUSAN_PRECOMPUTED_TRAVEL_TIME_FILE[1]);
+            if (existing) return Promise.resolve(existing);
+            if (busanPrecomputedLoadingPromise) return busanPrecomputedLoadingPromise;
+
+            busanPrecomputedLoadingPromise = new Promise(resolve => {
+                const script = document.createElement('script');
+                script.src = BUSAN_PRECOMPUTED_TRAVEL_TIME_FILE[0];
+                script.async = true;
+                script.onload = () => resolve(readGlobal(BUSAN_PRECOMPUTED_TRAVEL_TIME_FILE[1]));
+                script.onerror = () => resolve(null);
+                document.head.appendChild(script);
+            }).finally(() => { busanPrecomputedLoadingPromise = null; });
+            return busanPrecomputedLoadingPromise;
+        }
+
+        function loadSeoulPrecomputedTravelTimes() {
+            const existing = readGlobal(SEOUL_PRECOMPUTED_TRAVEL_TIME_FILE[1]);
+            if (existing) return Promise.resolve(existing);
+            if (seoulPrecomputedLoadingPromise) return seoulPrecomputedLoadingPromise;
+
+            seoulPrecomputedLoadingPromise = new Promise(resolve => {
+                const script = document.createElement('script');
+                script.src = SEOUL_PRECOMPUTED_TRAVEL_TIME_FILE[0];
+                script.async = true;
+                script.onload = () => resolve(readGlobal(SEOUL_PRECOMPUTED_TRAVEL_TIME_FILE[1]));
+                script.onerror = () => resolve(null);
+                document.head.appendChild(script);
+            }).finally(() => { seoulPrecomputedLoadingPromise = null; });
+            return seoulPrecomputedLoadingPromise;
+        }
+
+        function decodePackedSeconds(encoded) {
+            const binary = window.atob(encoded);
+            const values = new Uint16Array(binary.length / 2);
+            for (let index = 0; index < values.length; index++) {
+                values[index] = binary.charCodeAt(index * 2) | (binary.charCodeAt(index * 2 + 1) << 8);
+            }
+            return values;
+        }
+
+        function sourceFromPrecomputedBundle(bundle, lineId) {
+            const line = bundle?.lines?.[lineId];
+            return line ? {
+                stations: line.stations.map(name => ({ name })),
+                precomputedDurations: line.durations,
+                precomputedPackedSeconds: line.packedSeconds
+                    ? Object.fromEntries(Object.entries(line.packedSeconds).map(([day, encoded]) => [day, decodePackedSeconds(encoded)]))
+                    : null,
+                precomputed: true
+            } : null;
+        }
+
+        function loadTimetable(lineId) {
+            const sequence = ++loadSequence;
+            const config = timetableFiles[lineId];
+            currentSource = null;
+            durationSeconds = 0;
+            dom.topStatus.classList.remove('ready');
+            dom.statusText.textContent = '시간표 불러오는 중';
+            dom.loadingMessage.classList.remove('hidden');
+            dom.startButton.disabled = true;
+            dom.startButton.textContent = '여정 준비 중';
+            if (!config) return Promise.resolve(null);
+
+            if (currentRegion === 'daegu' && daeguPrecomputedLineIds.has(lineId)) {
+                return loadDaeguPrecomputedTravelTimes()
+                    .then(bundle => applySource(sourceFromPrecomputedBundle(bundle, lineId), sequence, lineId));
+            }
+
+            if (daejeonGwangjuPrecomputedLineIds.has(lineId)) {
+                return loadDaejeonGwangjuPrecomputedTravelTimes()
+                    .then(bundle => applySource(sourceFromPrecomputedBundle(bundle, lineId), sequence, lineId));
+            }
+
+            if (busanPrecomputedLineIds.has(lineId)) {
+                return loadBusanPrecomputedTravelTimes()
+                    .then(bundle => applySource(sourceFromPrecomputedBundle(bundle, lineId), sequence, lineId));
+            }
+
+            if (seoulPrecomputedLineIds.has(lineId)) {
+                return loadSeoulPrecomputedTravelTimes()
+                    .then(bundle => applySource(sourceFromPrecomputedBundle(bundle, lineId), sequence, lineId));
+            }
+
+            const existing = readGlobal(config[1]);
+            if (existing) return Promise.resolve(existing).then(source => applySource(source, sequence, lineId));
+
+            return new Promise(resolve => {
+                const script = document.createElement('script');
+                script.src = config[0];
+                script.async = true;
+                script.onload = () => resolve(applySource(readGlobal(config[1]), sequence, lineId));
+                script.onerror = () => resolve(applySource(null, sequence, lineId));
+                document.head.appendChild(script);
+            });
+        }
+
+        function applySource(source, sequence, lineId) {
+            if (sequence !== loadSequence || lineId !== currentLine) return null;
+            currentSource = source;
+            if (!source || !Array.isArray(source.stations) || source.stations.length < 2) {
+                dom.statusText.textContent = '시간표를 불러오지 못함';
+                dom.loadingMessage.textContent = '시간표 데이터가 없습니다. 다른 노선을 선택해 주세요.';
+                renderStations([]);
+                return null;
+            }
+            dom.topStatus.classList.add('ready');
+            dom.statusText.textContent = `${dayLabel()} 시간표 준비됨`;
+            dom.loadingMessage.classList.add('hidden');
+            renderStations(source.stations.map(station => normalizeName(station.name)));
+            calculateDuration();
+            return source;
+        }
+
+        function normalizeName(name) {
+            return aliases[currentLine]?.[name] || name;
+        }
+
+        function renderStations(stations) {
+            if (!stations.length) {
+                dom.originSelect.innerHTML = '<option>역 정보 없음</option>';
+                dom.destinationSelect.innerHTML = '<option>역 정보 없음</option>';
+                return;
+            }
+            if (!stations.includes(origin)) origin = stations[Math.min(1, stations.length - 1)];
+            if (!stations.includes(destination) || destination === origin) {
+                const index = stations.indexOf(origin);
+                destination = stations[index + 5 < stations.length ? index + 5 : Math.max(0, index - 5)];
+                if (destination === origin) destination = stations[(index + 1) % stations.length];
+            }
+            const options = stations.map(station => `<option value="${station}">${station}</option>`).join('');
+            dom.originSelect.innerHTML = options;
+            dom.destinationSelect.innerHTML = options;
+            dom.originSelect.value = origin;
+            dom.destinationSelect.value = destination;
+        }
+
+        function timeToSeconds(value) {
+            if (!value) return NaN;
+            const parts = String(value).split(':').map(Number);
+            if (parts.length < 2 || parts.some(Number.isNaN)) return NaN;
+            let hour = parts[0];
+            if (hour < 4) hour += 24;
+            return hour * 3600 + parts[1] * 60 + (parts[2] || 0);
+        }
+
+        function rowTime(row) {
+            return timeToSeconds(row.departureTime || row.time || row.arrivalTime);
+        }
+
+        function rowKey(row) {
+            return `${row.trainNo || ''}|${row.routeId || ''}|${normalizeName(row.startStation || '')}|${normalizeName(row.destination || '')}`;
+        }
+
+        function getDurationSamples(from, to) {
+            if (!currentSource || from === to) return [];
+            if (currentSource.precomputedDurations || currentSource.precomputedPackedSeconds) {
+                const stationNames = currentSource.stations.map(station => normalizeName(station.name));
+                const fromIndex = stationNames.indexOf(from);
+                const toIndex = stationNames.indexOf(to);
+                const packed = currentSource.precomputedPackedSeconds?.[dayType()];
+                const duration = packed
+                    ? packed[fromIndex * stationNames.length + toIndex] || 0
+                    : currentSource.precomputedDurations[dayType()]?.[fromIndex]?.[toIndex] || 0;
+                return duration > 0 ? [duration] : [];
+            }
+            const fromStation = currentSource.stations.find(station => normalizeName(station.name) === from);
+            const toStation = currentSource.stations.find(station => normalizeName(station.name) === to);
+            if (!fromStation || !toStation) return [];
+            const result = [];
+
+            ['up','down'].forEach(direction => {
+                const fromRows = fromStation.timetable?.[dayType()]?.[direction] || [];
+                const toRows = toStation.timetable?.[dayType()]?.[direction] || [];
+                const exact = new Map();
+                const trainOnly = new Map();
+                toRows.forEach(row => {
+                    const sec = rowTime(row);
+                    if (!Number.isFinite(sec)) return;
+                    const key = rowKey(row);
+                    if (!exact.has(key)) exact.set(key, []);
+                    exact.get(key).push(sec);
+                    const trainKey = String(row.trainNo || '');
+                    if (!trainOnly.has(trainKey)) trainOnly.set(trainKey, []);
+                    trainOnly.get(trainKey).push(sec);
+                });
+                fromRows.forEach(row => {
+                    const start = rowTime(row);
+                    if (!Number.isFinite(start)) return;
+                    const candidates = exact.get(rowKey(row)) || trainOnly.get(String(row.trainNo || '')) || [];
+                    const valid = candidates.map(sec => sec - start).filter(sec => sec > 0 && sec <= 4 * 3600).sort((a,b) => a-b);
+                    if (valid.length) result.push(valid[0]);
+                });
+            });
+            return result.sort((a,b) => a-b);
+        }
+
+        function median(values) {
+            if (!values.length) return 0;
+            const middle = Math.floor(values.length / 2);
+            return values.length % 2 ? values[middle] : Math.round((values[middle - 1] + values[middle]) / 2);
+        }
+
+        function calculateDuration() {
+            origin = dom.originSelect.value;
+            destination = dom.destinationSelect.value;
+            durationSamples = getDurationSamples(origin, destination);
+            durationSeconds = median(durationSamples);
+            const stationNames = currentSource?.stations.map(station => normalizeName(station.name)) || [];
+            const originIndex = stationNames.indexOf(origin);
+            const destinationIndex = stationNames.indexOf(destination);
+            const stationCount = Math.max(1, Math.abs(destinationIndex - originIndex));
+            const minutes = durationSeconds ? Math.max(1, Math.round(durationSeconds / 60)) : 0;
+            const min = durationSamples.length ? Math.max(1, Math.round(durationSamples[0] / 60)) : 0;
+            const max = durationSamples.length ? Math.max(1, Math.round(durationSamples[durationSamples.length - 1] / 60)) : 0;
+
+            dom.timetableLabel.textContent = `${lineMeta().label} ${dayLabel()} 시간표`;
+            dom.routeSummary.textContent = `${stationCount}개 역 · ${origin} → ${destination}`;
+            dom.durationValue.innerHTML = durationSeconds ? `${minutes}<small>분</small>` : '--<small>분</small>';
+            dom.calculationNote.textContent = durationSeconds
+                ? currentSource?.precomputed
+                    ? `실제 ${dayLabel()} 시간표 전 구간을 미리 계산한 소요시간 중앙값입니다.`
+                    : `${durationSamples.length}개 열차의 실제 소요시간 ${min}${min !== max ? `~${max}` : ''}분을 비교해 중앙값으로 계산했습니다.`
+                : currentSource?.precomputed
+                    ? `실제 ${dayLabel()} 시간표에 직통 운행이 없는 구간입니다.`
+                    : '선택한 구간의 시간표를 찾지 못했습니다. 역의 방향을 바꾸거나 다른 역을 선택해 주세요.';
+            dom.startButton.disabled = !durationSeconds;
+            dom.startButton.textContent = durationSeconds ? '여정 시작하기' : '여정을 시작할 수 없음';
+            updateStationDisplay(stationNames, originIndex, destinationIndex, minutes, stationCount);
+        }
+
+        function updateStationDisplay(stations, originIndex, destinationIndex, minutes, count) {
+            const previous = originIndex > 0 ? stations[originIndex - 1] : '종점';
+            const next = originIndex >= 0 && originIndex < stations.length - 1 ? stations[originIndex + 1] : '종점';
+            dom.currentStation.textContent = origin || '현재역';
+            dom.previousStation.textContent = previous;
+            dom.nextStation.textContent = next;
+            document.querySelectorAll('[data-door-station="previous"]').forEach(node => { node.textContent = previous; });
+            document.querySelectorAll('[data-door-station="current"]').forEach(node => { node.textContent = origin || '현재역'; });
+            document.querySelectorAll('[data-door-station="next"]').forEach(node => { node.textContent = next; });
+        }
+
+        function formatClock(seconds) {
+            const value = Math.max(0, Math.ceil(seconds));
+            return `${String(Math.floor(value / 60)).padStart(2,'0')}:${String(value % 60).padStart(2,'0')}`;
+        }
+
+        function startSession() {
+            if (!durationSeconds) return;
+            clearInterval(timerHandle);
+            session = { origin, destination, total: durationSeconds, remaining: durationSeconds, endAt: Date.now() + durationSeconds * 1000, paused: false, completed: false };
+            dom.settingView.classList.add('hidden');
+            dom.timerView.classList.remove('hidden');
+            dom.timerRoute.textContent = `${origin}역 → ${destination}역 · ${lineMeta().label}`;
+            dom.pauseButton.disabled = false;
+            dom.pauseButton.textContent = '일시정지';
+            renderTimer();
+            runDoorDepartureSequence();
+            timerHandle = setInterval(tickTimer, 250);
+        }
+
+        function tickTimer() {
+            if (!session || session.paused || session.completed) return;
+            session.remaining = Math.max(0, (session.endAt - Date.now()) / 1000);
+            if (session.remaining <= 0) {
+                session.remaining = 0;
+                session.completed = true;
+                clearInterval(timerHandle);
+                timerHandle = 0;
+                dom.pauseButton.disabled = true;
+                dom.pauseButton.textContent = '집중 완료';
+            }
+            renderTimer();
+        }
+
+        function renderTimer() {
+            if (!session) return;
+            dom.timerClock.textContent = formatClock(session.remaining);
+            dom.progressBar.style.width = `${Math.max(0, Math.min(100, session.remaining / session.total * 100))}%`;
+        }
+
+        function togglePause() {
+            if (!session || session.completed) return;
+            if (session.paused) {
+                session.paused = false;
+                session.endAt = Date.now() + session.remaining * 1000;
+                dom.pauseButton.textContent = '일시정지';
+                resumeTrainSequence();
+            } else {
+                session.remaining = Math.max(0, (session.endAt - Date.now()) / 1000);
+                session.paused = true;
+                dom.pauseButton.textContent = '계속하기';
+                pauseTrainSequence();
+            }
+            renderTimer();
+        }
+
+        function endSession() {
+            clearInterval(timerHandle);
+            timerHandle = 0;
+            resetTrainSequence();
+            session = null;
+            dom.timerView.classList.add('hidden');
+            dom.settingView.classList.remove('hidden');
+            calculateDuration();
+        }
+
+        function setDoorsOpen(open) {
+            dom.screenDoors.classList.toggle('is-open', open);
+            dom.trainStage.classList.toggle('is-doors-open', open);
+        }
+
+        function trainSequenceSteps() {
+            return [
+                { at: 2700, run: () => setDoorsOpen(true) },
+                { at: 11900, run: () => setDoorsOpen(false) },
+                { at: 13000, run: () => dom.trainStage.classList.add('is-departing') },
+                { at: 23800, run: () => resetTrainSequence() }
+            ];
+        }
+
+        function clearTrainSequenceTimeouts() {
+            trainSequenceHandles.forEach(clearTimeout);
+            trainSequenceHandles = [];
+        }
+
+        function scheduleNextTrainSequenceStep() {
+            if (trainSequencePaused || !trainSequenceStartedAt) return;
+            const steps = trainSequenceSteps();
+            if (trainSequenceNextStepIndex >= steps.length) return;
+
+            const stepIndex = trainSequenceNextStepIndex;
+            const delay = Math.max(0, steps[stepIndex].at - trainSequenceElapsed);
+            const handle = setTimeout(() => {
+                trainSequenceHandles = trainSequenceHandles.filter(item => item !== handle);
+                if (trainSequencePaused || trainSequenceNextStepIndex !== stepIndex) return;
+
+                trainSequenceElapsed = steps[stepIndex].at;
+                trainSequenceNextStepIndex = stepIndex + 1;
+                trainSequenceStartedAt = performance.now() - trainSequenceElapsed;
+                steps[stepIndex].run();
+
+                if (!trainSequencePaused && trainSequenceStartedAt && trainSequenceNextStepIndex === stepIndex + 1) {
+                    scheduleNextTrainSequenceStep();
+                }
+            }, delay);
+            trainSequenceHandles.push(handle);
+        }
+
+        function collectRunningTrainAnimations() {
+            const animations = new Set();
+            [dom.trainStage, dom.screenDoors].forEach(root => {
+                [root, ...root.querySelectorAll('*')].forEach(node => {
+                    if (typeof node.getAnimations !== 'function') return;
+                    node.getAnimations().forEach(animation => {
+                        if (animation.playState === 'running' || animation.playState === 'pending') animations.add(animation);
+                    });
+                });
+            });
+            return [...animations];
+        }
+
+        function pauseTrainSequence() {
+            if (!trainSequenceStartedAt || trainSequencePaused) return;
+            trainSequenceElapsed = Math.min(23800, Math.max(0, performance.now() - trainSequenceStartedAt));
+            trainSequencePaused = true;
+            clearTrainSequenceTimeouts();
+            pausedTrainAnimations = collectRunningTrainAnimations();
+            pausedTrainAnimations.forEach(animation => animation.pause());
+        }
+
+        function resumeTrainSequence() {
+            if (!trainSequencePaused) return;
+            trainSequencePaused = false;
+            trainSequenceStartedAt = performance.now() - trainSequenceElapsed;
+            pausedTrainAnimations.forEach(animation => animation.play());
+            pausedTrainAnimations = [];
+            scheduleNextTrainSequenceStep();
+        }
+
+        function runDoorDepartureSequence() {
+            resetTrainSequence();
+            dom.trainStage.classList.add('is-resetting');
+            void dom.trainStage.offsetWidth;
+            dom.trainStage.classList.remove('is-resetting');
+            dom.trainStage.classList.add('is-present');
+            trainSequenceStartedAt = performance.now();
+            trainSequenceElapsed = 0;
+            trainSequenceNextStepIndex = 0;
+            trainSequencePaused = false;
+            scheduleNextTrainSequenceStep();
+        }
+
+        function resetTrainSequence() {
+            clearTrainSequenceTimeouts();
+            pausedTrainAnimations.forEach(animation => animation.cancel());
+            pausedTrainAnimations = [];
+            trainSequenceStartedAt = 0;
+            trainSequenceElapsed = 0;
+            trainSequenceNextStepIndex = 0;
+            trainSequencePaused = false;
+            setDoorsOpen(false);
+            dom.trainStage.classList.add('is-resetting');
+            dom.trainStage.classList.remove('is-present', 'is-departing');
+            void dom.trainStage.offsetWidth;
+            dom.trainStage.classList.remove('is-resetting');
+        }
+
+        dom.regionMenu.addEventListener('click', event => {
+            const button = event.target.closest('[data-region]');
+            if (!button) return;
+            currentRegion = button.dataset.region;
+            currentLine = regions.find(region => region.id === currentRegion).lines[0][0];
+            origin = '';
+            destination = '';
+            renderMenus();
+            setTheme();
+            loadTimetable(currentLine);
+        });
+
+        dom.lineMenu.addEventListener('click', event => {
+            const button = event.target.closest('[data-line]');
+            if (!button || button.dataset.line === currentLine) return;
+            currentLine = button.dataset.line;
+            origin = '';
+            destination = '';
+            renderMenus();
+            setTheme();
+            loadTimetable(currentLine);
+        });
+
+        dom.originSelect.addEventListener('change', calculateDuration);
+        dom.destinationSelect.addEventListener('change', calculateDuration);
+        dom.swapButton.addEventListener('click', () => {
+            [origin, destination] = [destination, origin];
+            dom.originSelect.value = origin;
+            dom.destinationSelect.value = destination;
+            calculateDuration();
+        });
+        dom.startButton.addEventListener('click', openJourneyMap);
+        dom.journeyMapBackdrop.addEventListener('click', closeJourneyMap);
+        dom.journeyMapClose.addEventListener('click', closeJourneyMap);
+        dom.journeyRegionBack.addEventListener('click', returnToRegionSelection);
+        dom.journeyLineList.addEventListener('click', event => {
+            const button = event.target.closest('[data-journey-line]');
+            if (button) selectJourneyLine(button.dataset.journeyLine);
+        });
+        dom.journeyOriginSelect.addEventListener('change', syncJourneyRoute);
+        dom.journeyDestinationSelect.addEventListener('change', syncJourneyRoute);
+        dom.journeyStationSwap.addEventListener('click', () => {
+            const previousOrigin = dom.journeyOriginSelect.value;
+            dom.journeyOriginSelect.value = dom.journeyDestinationSelect.value;
+            dom.journeyDestinationSelect.value = previousOrigin;
+            syncJourneyRoute();
+        });
+        dom.journeyConfirmButton.addEventListener('click', confirmJourney);
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && dom.journeyMapModal.classList.contains('is-open')) closeJourneyMap();
+        });
+        dom.pauseButton.addEventListener('click', togglePause);
+        dom.endButton.addEventListener('click', endSession);
+
+        renderMenus();
+        setTheme();
+        loadTimetable(currentLine);
+    </script>
+</body>
+</html>
