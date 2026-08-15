@@ -1414,86 +1414,35 @@
             height: 55.7%;
             overflow: hidden;
             border-radius: 6.5% / 13.5%;
-            background: #b8ced8;
+            background: #08090a;
             box-shadow: inset 0 0 22px rgba(4, 12, 17, .38);
         }
 
-        .ride-scene-layer {
+        .ride-tunnel-marquee {
             position: absolute;
-            inset: 0;
-            overflow: hidden;
-        }
-
-        .ride-outdoor-layer {
-            z-index: 0;
-            transform-origin: center;
-        }
-
-        .app.is-riding .ride-outdoor-layer {
-            animation: ride-outdoor-rise 24s cubic-bezier(.4, 0, .22, 1) both;
-        }
-
-        .ride-ascent-layer {
-            z-index: 1;
-            background: #171513 url('./assets/subway-window-tunnel-ascent-v1.png') 100% center / 140% 100% no-repeat;
-            opacity: 0;
-            filter: brightness(.72);
-            transform: scale(1.08);
-            transform-origin: center;
-        }
-
-        .app.is-riding .ride-ascent-layer {
-            animation: ride-ascent-pass 24s cubic-bezier(.42, 0, .24, 1) both;
-        }
-
-        .ride-tunnel-layer {
-            z-index: 2;
-            background: #08090a;
-            opacity: 1;
-            filter: brightness(.78);
-        }
-
-        .app.is-riding .ride-tunnel-layer {
-            animation: ride-tunnel-exit 14s cubic-bezier(.45, 0, .28, 1) both;
-        }
-
-        .ride-tunnel-layer::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            z-index: 2;
-            background: linear-gradient(90deg, rgba(255, 238, 197, 0), rgba(255, 241, 208, .9));
-            opacity: 0;
-        }
-
-        .app.is-riding .ride-tunnel-layer::after {
-            animation: ride-exit-light 14s ease-in both;
-        }
-
-        .ride-scenery-track {
-            position: absolute;
-            inset: -2%;
+            top: 0;
+            left: 0;
             display: flex;
-            width: 408%;
-            height: 104%;
-            animation: ride-scenery-flow 36s linear infinite;
-            animation-direction: reverse;
-            will-change: transform;
-        }
-
-        .ride-scenery-panel {
-            width: 25%;
+            width: max-content;
             height: 100%;
-            flex: 0 0 25%;
-            background: url('./assets/subway-window-scenery-korea-v2.png') center / cover no-repeat;
+            transform: translate3d(-50%, 0, 0);
+            will-change: transform;
+            backface-visibility: hidden;
         }
 
-        .ride-scenery-panel:nth-child(even) { transform: scaleX(-1); }
+        .app.is-riding .ride-tunnel-marquee {
+            animation: ride-tunnel-journey 2.5s linear infinite;
+        }
 
-        .ride-tunnel-layer .ride-scenery-track { animation-duration: 20s; }
-
-        .ride-tunnel-layer .ride-scenery-panel {
-            background-image: url('./assets/subway-window-tunnel-v1.png');
+        .ride-tunnel-strip {
+            display: block;
+            flex: 0 0 auto;
+            width: auto;
+            height: 100%;
+            aspect-ratio: 3342 / 941;
+            overflow: hidden;
+            filter: brightness(.78);
+            backface-visibility: hidden;
         }
 
         .ride-window-view::after {
@@ -1508,77 +1457,13 @@
             box-shadow: inset 0 0 26px rgba(8, 18, 23, .28);
         }
 
-        @keyframes ride-scenery-flow {
-            from { transform: translateX(0); }
-            to { transform: translateX(-50%); }
+        @keyframes ride-tunnel-journey {
+            from { transform: translate3d(-50%, 0, 0); }
+            to { transform: translate3d(0, 0, 0); }
         }
 
-        @keyframes ride-tunnel-exit {
-            0%, 43% { opacity: 1; filter: brightness(.78); }
-            65% { opacity: .96; filter: brightness(.98); }
-            84% { opacity: .42; filter: brightness(1.2); }
-            100% { opacity: 0; filter: brightness(1.5); visibility: hidden; }
-        }
-
-        @keyframes ride-exit-light {
-            0%, 48% { opacity: 0; transform: translateX(-38%); }
-            72% { opacity: .52; }
-            100% { opacity: .18; transform: translateX(38%); }
-        }
-
-        @keyframes ride-ascent-pass {
-            0%, 27% {
-                opacity: 0;
-                filter: brightness(.68);
-                background-position: 100% center;
-                transform: scale(1.08) translateY(0);
-            }
-            39% {
-                opacity: 1;
-                filter: brightness(.8);
-                background-position: 90% center;
-                transform: scale(1.1) translateY(1%);
-            }
-            70% {
-                opacity: 1;
-                filter: brightness(1.02);
-                background-position: 34% center;
-                transform: scale(1.13) translateY(7%);
-            }
-            100% {
-                opacity: 0;
-                filter: brightness(1.22);
-                background-position: 0 center;
-                transform: scale(1.17) translateY(14%);
-                visibility: hidden;
-            }
-        }
-
-        @keyframes ride-outdoor-rise {
-            0%, 36% {
-                filter: brightness(.65);
-                transform: scale(1.16) translateY(-6%);
-            }
-            70% {
-                filter: brightness(.9);
-                transform: scale(1.08) translateY(-2%);
-            }
-            100% {
-                filter: brightness(1);
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        .app.is-session-paused .ride-scenery-track,
-        .app.is-session-paused .ride-outdoor-layer,
-        .app.is-session-paused .ride-ascent-layer,
-        .app.is-session-paused .ride-tunnel-layer,
-        .app.is-session-paused .ride-tunnel-layer::after,
-        .app.is-ride-complete .ride-scenery-track,
-        .app.is-ride-complete .ride-outdoor-layer,
-        .app.is-ride-complete .ride-ascent-layer,
-        .app.is-ride-complete .ride-tunnel-layer,
-        .app.is-ride-complete .ride-tunnel-layer::after {
+        .app.is-session-paused .ride-tunnel-marquee,
+        .app.is-ride-complete .ride-tunnel-marquee {
             animation-play-state: paused;
         }
 
@@ -1670,7 +1555,7 @@
             .train-door-leaf { transition-duration: 1ms; }
             .train { transition-duration: 1ms; }
             .ride-interior { transition-duration: 1ms; }
-            .ride-scenery-track { animation-duration: 120s; }
+            .ride-tunnel-marquee { animation-duration: 5s !important; }
         }
 
         .hidden { display: none !important; }
@@ -1797,22 +1682,15 @@
         <div class="ride-interior" id="ride-interior" aria-hidden="true">
             <div class="ride-interior-visual">
                 <div class="ride-window-view">
-                    <div class="ride-scene-layer ride-outdoor-layer">
-                        <div class="ride-scenery-track">
-                            <span class="ride-scenery-panel"></span>
-                            <span class="ride-scenery-panel"></span>
-                            <span class="ride-scenery-panel"></span>
-                            <span class="ride-scenery-panel"></span>
-                        </div>
-                    </div>
-                    <div class="ride-scene-layer ride-ascent-layer"></div>
-                    <div class="ride-scene-layer ride-tunnel-layer">
-                        <div class="ride-scenery-track">
-                            <span class="ride-scenery-panel"></span>
-                            <span class="ride-scenery-panel"></span>
-                            <span class="ride-scenery-panel"></span>
-                            <span class="ride-scenery-panel"></span>
-                        </div>
+                    <div class="ride-tunnel-marquee">
+                        <svg class="ride-tunnel-strip" viewBox="0 0 3342 941" preserveAspectRatio="none" aria-hidden="true">
+                            <image href="./assets/subway-window-tunnel-v1.png" x="0" y="0" width="1672" height="941" preserveAspectRatio="none"></image>
+                            <g transform="translate(3342 0) scale(-1 1)"><image href="./assets/subway-window-tunnel-v1.png" x="0" y="0" width="1672" height="941" preserveAspectRatio="none"></image></g>
+                        </svg>
+                        <svg class="ride-tunnel-strip" viewBox="0 0 3342 941" preserveAspectRatio="none" aria-hidden="true">
+                            <image href="./assets/subway-window-tunnel-v1.png" x="0" y="0" width="1672" height="941" preserveAspectRatio="none"></image>
+                            <g transform="translate(3342 0) scale(-1 1)"><image href="./assets/subway-window-tunnel-v1.png" x="0" y="0" width="1672" height="941" preserveAspectRatio="none"></image></g>
+                        </svg>
                     </div>
                 </div>
             </div>
